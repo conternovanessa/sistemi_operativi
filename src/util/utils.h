@@ -19,7 +19,7 @@ typedef struct
 {
     int energy_demand;
     int n_atom_init;
-    int n_atom_max;
+    int max_n_atomico;
     int min_n_atomico;
     int step_attivatore;
     int step_alimentazione;

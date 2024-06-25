@@ -35,9 +35,9 @@ SimulationParameters leggiVariabili(const char *filename)
             {
                 params.n_atom_init = atoi(valore);
             }
-            else if (strcmp(variabile, "N_ATOM_MAX") == 0)
+            else if (strcmp(variabile, "MAX_N_ATOMICO") == 0)
             {
-                params.n_atom_max = atoi(valore);
+                params.max_n_atomico = atoi(valore);
             }
             else if (strcmp(variabile, "MIN_N_ATOMICO") == 0)
             {
@@ -74,7 +74,7 @@ void printSimulationParameters(const SimulationParameters *params)
 {
     printf("ENERGY_DEMAND: %d\n", params->energy_demand);
     printf("N_ATOM_INIT: %d\n", params->n_atom_init);
-    printf("N_ATOM_MAX: %d\n", params->n_atom_max);
+    printf("MAX_N_ATOMICO: %d\n", params->max_n_atomico);
     printf("MIN_N_ATOMICO: %d\n", params->min_n_atomico);
     printf("STEP_ATTIVATORE: %d\n", params->step_attivatore);
     printf("STEP_ALIMENTAZIONE: %d\n", params->step_alimentazione);
