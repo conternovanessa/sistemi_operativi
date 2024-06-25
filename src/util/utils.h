@@ -31,13 +31,16 @@ typedef struct
 
 //PROTOTYPE DEFINITION
 
+//Utilities to read files
 SimulationParameters leggiVariabili(const char *filename);
 
+// Process creation and changes
 pid_t create_attivatore();
 pid_t create_atomo(int *num_atomico, char *buffer, sem_t *sem, shared_data *shm_data);
-
-void printSimulationParameters(const SimulationParameters *params);
 void add_pid(pid_t pid, sem_t *sem, shared_data *shm_data);
+
+// IO Utilities
+void printSimulationParameters(const SimulationParameters *params);
 void print_shared_data(sem_t *sem, shared_data *shm_data);
 void print_line();
 
