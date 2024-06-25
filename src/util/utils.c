@@ -72,6 +72,11 @@ SimulationParameters leggiVariabili(const char *filename)
 
 void printSimulationParameters(const SimulationParameters *params)
 {
+    char arr[30];
+    for (int i = 0; i < 30; ++i) {
+        arr[i] = '-';
+    }
+    printf("%s\n", arr);
     printf("ENERGY_DEMAND: %d\n", params->energy_demand);
     printf("N_ATOM_INIT: %d\n", params->n_atom_init);
     printf("MAX_N_ATOMICO: %d\n", params->max_n_atomico);
@@ -81,4 +86,5 @@ void printSimulationParameters(const SimulationParameters *params)
     printf("N_NUOVI_ATOMI: %d\n", params->n_nuovi_atomi);
     printf("SIM_DURATION: %d\n", params->sim_duration);
     printf("ENERGY_EXPLODE_THRESHOLD: %d\n", params->energy_explode_threshold);
+    printf("%s\n", arr);
 }

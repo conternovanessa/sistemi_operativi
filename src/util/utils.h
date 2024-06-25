@@ -4,6 +4,7 @@
 
 #include <sys/types.h>
 
+// STRUCT DEFINITIONS
 typedef struct
 {
     int attivazioni;
@@ -28,8 +29,9 @@ typedef struct
     int energy_explode_threshold;
 } SimulationParameters;
 
+//PROTOTYPE DEFINITION
+
 SimulationParameters leggiVariabili(const char *filename);
-void printSimulationParameters(
-    const SimulationParameters *params);
+void printSimulationParameters(const SimulationParameters *params);
 
 #endif
