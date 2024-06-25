@@ -32,7 +32,13 @@ typedef struct
 //PROTOTYPE DEFINITION
 
 SimulationParameters leggiVariabili(const char *filename);
+
+pid_t create_attivatore();
+pid_t create_atomo(int *num_atomico, char *buffer, sem_t *sem, shared_data *shm_data);
+
 void printSimulationParameters(const SimulationParameters *params);
+void add_pid(pid_t pid, sem_t *sem, shared_data *shm_data);
+void print_shared_data(sem_t *sem, shared_data *shm_data);
 void print_line();
 
 #endif

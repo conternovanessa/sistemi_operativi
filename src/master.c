@@ -85,96 +85,36 @@ void cleanup_shared_memory_and_semaphore() {
     }
 }
 
-pid_t process_attivatore() {
-    // Fork attivatore process
-    pid_t a_pid = fork();
-    if (a_pid == -1) {
-        perror("fork for attivatore did not go well");
-        exit(EXIT_FAILURE);
-    }
-    if (a_pid == 0) {
-        // Child process: attivatore
-        char *attivatore_args[] = {"attivatore", NULL};
-        if (execve("./attivatore", attivatore_args, NULL) == -1) {
-            perror("execve failed for attivatore");
-            exit(EXIT_FAILURE);
-        }
-    }
-    return a_pid;
-}
-
-pid_t create_atomo(int num_atomico, char *buffer) {
-    // Fork atomo process
-    pid_t c_pid = fork();
-    if (c_pid == -1) {
-        perror("fork to create atomo did not go well");
-        terminate_processes(a_pid, c_pid); // Clean up child processes
-        exit(EXIT_FAILURE);
-    }
-    if (c_pid == 0) {
-        // Child process: atomo
-        sprintf(buffer, "%d", num_atomico);
-        char *atomo_args[] = {"atomo", buffer, NULL};
-        if (execve("./atomo", atomo_args, NULL) == -1) {
-            perror("execve failed for atomo");
-            exit(EXIT_FAILURE);
-        }
-    } else {
-        // Parent process: update shared memory
-        sem_wait(sem);
-        shm_data->pid_array[shm_data->num_processes++] = c_pid;
-        sem_post(sem);
-    }
-    return c_pid;
-}
-
-void print_shared_data() {
-    sem_wait(sem); // Lock the semaphore before accessing shared memory
-    printf("Shared Data:\n");
-    printf("attivazioni: %d\n", shm_data->attivazioni);
-    printf("scissioni: %d\n", shm_data->scissioni);
-    printf("free_energy: %d\n", shm_data->free_energy);
-    printf("consumata: %d\n", shm_data->consumata);
-    printf("scorie: %d\n", shm_data->scorie);
-    printf("num_processes: %d\n", shm_data->num_processes);
-    for (int i = 0; i < shm_data->num_processes; ++i) {
-        printf("pid_array[%d]: %d\n", i, shm_data->pid_array[i]);
-    }
-    sem_post(sem); // Unlock the semaphore after accessing shared memory
-}
-
 int main(int argc, char *argv[]) {
     srand(time(NULL));
     const char* filename = "variabili.txt";
     SimulationParameters params = leggiVariabili(filename);
+    print_line();
     printf("PARAMETERS OBTAINED FROM THE FILE: \n");
     printSimulationParameters(&params);
 
     int num_atomico = 0;
     char buffer[20];
-    print_line();
+    
     // Initialize shared memory and semaphore
     init_shared_memory_and_semaphore();
-    print_shared_data();
-    print_line();
+    print_shared_data(sem, shm_data);
 
     // Fork attivatore process
-    a_pid = process_attivatore();
+    a_pid = create_attivatore();
 
     // Fork atomo process
     for (int i = 0; i < 1; i++) {
         num_atomico = rand() % params.max_n_atomico + 1;
-        c_pid = create_atomo(num_atomico, buffer);
+        c_pid = create_atomo(&num_atomico, buffer, sem, shm_data);
     }
 
     // Wait for a certain amount of time
     sleep(2);  // Wait for 2 seconds
 
-    print_line();
     // Print shared data after sleep
-    print_shared_data();
+    print_shared_data(sem, shm_data);
 
-    print_line();
     printf("Kill all the processes\n");
     // Terminate child processes
     terminate_processes(a_pid, c_pid);

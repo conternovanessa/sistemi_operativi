@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <semaphore.h>
+#include <unistd.h>
 
 #include "utils.h"
 
@@ -70,6 +72,68 @@ SimulationParameters leggiVariabili(const char *filename){
     fclose(file);
     return params;
 }
+
+pid_t create_attivatore() {
+    // Fork attivatore process
+    pid_t a_pid = fork();
+    if (a_pid == -1) {
+        perror("fork for attivatore did not go well");
+        exit(EXIT_FAILURE);
+    }
+    if (a_pid == 0) {
+        // Child process: attivatore
+        char *attivatore_args[] = {"attivatore", NULL};
+        if (execve("./attivatore", attivatore_args, NULL) == -1) {
+            perror("execve failed for attivatore");
+            exit(EXIT_FAILURE);
+        }
+    }
+    return a_pid;
+}
+
+pid_t create_atomo(int *num_atomico, char *buffer, sem_t *sem, shared_data *shm_data) {
+    // Fork atomo process
+    pid_t c_pid = fork();
+    if (c_pid == -1) {
+        perror("fork to create atomo did not go well");
+        exit(EXIT_FAILURE);
+    }
+    if (c_pid == 0) {
+        // Child process: atomo
+        sprintf(buffer, "%d", *num_atomico);
+        char *atomo_args[] = {"atomo", buffer, NULL};
+        if (execve("./atomo", atomo_args, NULL) == -1) {
+            perror("execve failed for atomo");
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        // Parent process: update shared memory
+        add_pid(c_pid, sem, shm_data);
+    }
+    return c_pid;
+}
+
+void add_pid(pid_t pid, sem_t *sem, shared_data *shm_data){
+    // Parent process: update shared memory
+    sem_wait(sem);
+    shm_data->pid_array[shm_data->num_processes++] = pid;
+    sem_post(sem);
+}
+
+void print_shared_data(sem_t *sem, shared_data *shm_data) {
+    print_line();
+    sem_wait(sem); // Lock the semaphore before accessing shared memory
+    printf("Shared Data:\n");
+    printf("attivazioni: %d\n", shm_data->attivazioni);
+    printf("scissioni: %d\n", shm_data->scissioni);
+    printf("free_energy: %d\n", shm_data->free_energy);
+    printf("consumata: %d\n", shm_data->consumata);
+    printf("scorie: %d\n", shm_data->scorie);
+    printf("num_processes: %d\n", shm_data->num_processes);
+    sem_post(sem); // Unlock the semaphore after accessing shared memory
+    print_line();
+}
+
 
 void print_line(){
     printf("--------------------------------------\n");
