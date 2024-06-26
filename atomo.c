@@ -31,6 +31,8 @@ void scissione(int numero_atomico){
     printf("n2: %d\n", n2);
 
 }
+
+/// ciao
 int main(int argc, char *argv[]) {
     // Converti gli argomenti in interi
     pid_t pid = atoi(argv[1]);
