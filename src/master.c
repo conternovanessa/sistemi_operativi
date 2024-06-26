@@ -90,6 +90,7 @@ void timer_handler(int signum) {
 }
 
 int main(int argc, char *argv[]) {
+
     struct itimerval timer_stampa;
 
     // Inizializza sem e shm_data qui...
@@ -106,6 +107,11 @@ int main(int argc, char *argv[]) {
     // Avvia il timer
     setitimer(ITIMER_REAL, &timer_stampa, NULL);
 
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        perror("pipe failed");
+        exit(1);
+    }
 
     srand(time(NULL));
     const char* filename = "variabili.txt";
@@ -125,16 +131,40 @@ int main(int argc, char *argv[]) {
     a_pid = create_attivatore();
 
     // Fork atomo process
-    for (int i = 0; i < 1; i++) {
-        num_atomico = rand() % params.max_n_atomico + 1;
-        c_pid = create_atomo(&num_atomico, buffer, sem, shm_data);
+    for (int i = 0; i < params.n_atom_init ; i++) {
+        pid_t pid = fork();
+
+        if (pid == -1) {
+            // Errore nella fork
+            perror("fork failed");
+            exit(1);
+        } else if (pid == 0) {
+            // Processo figlio
+            int num_atomico;
+            if (read(pipefd[0], &num_atomico, sizeof(int)) == -1) {
+                perror("read from pipe failed");
+                exit(1);
+            }
+            c_pid = create_atomo(&num_atomico, buffer, sem, shm_data);
+            exit(0);  // Il figlio termina dopo aver creato l'atomo
+        } else {
+            // Processo padre
+            num_atomico = rand() % params.max_n_atomico + 1;
+            if (write(pipefd[1], &num_atomico, sizeof(int)) == -1) {
+                perror("write to pipe failed");
+                exit(1);
+            }
+            // Attendi che il figlio termini
+            wait(NULL);
+        }
     }
 
     // Wait for a certain amount of time
     sleep(2);  // Wait for 2 seconds
 
     // Print shared data after sleep
-    print_shared_data(sem, shm_data);
+    //print_shared_data(sem, shm_data);
+
 
     printf("Kill all the processes\n");
     // Terminate child processes
