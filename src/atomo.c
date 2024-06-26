@@ -25,6 +25,8 @@ int main(int argc, char *argv[]){
     const char* filename = "variabili.txt";
     SimulationParameters params = leggiVariabili(filename);
     int minimo = params.min_n_atomico;
+
+
     scissione(num_atomico);
 
     printf("Received num_atomico: %d \n", num_atomico);
