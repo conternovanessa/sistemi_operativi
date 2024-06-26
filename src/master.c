@@ -9,6 +9,7 @@
 #include <sys/mman.h>
 #include <semaphore.h>
 #include <time.h>
+#include <sys/time.h>
 #include "util/utils.h"
 
 #define SHARED_MEM_NAME "/shared_mem"
@@ -84,8 +85,28 @@ void cleanup_shared_memory_and_semaphore() {
         perror("sem_unlink failed");
     }
 }
+void timer_handler(int signum) {
+    print_shared_data(sem, shm_data);
+}
 
 int main(int argc, char *argv[]) {
+    struct itimerval timer_stampa;
+
+    // Inizializza sem e shm_data qui...
+
+    // Imposta il gestore del segnale
+    signal(SIGALRM, timer_handler);
+
+    // Configura il timer
+    timer_stampa.it_value.tv_sec = 1;  // Primo timeout dopo 1 secondo
+    timer_stampa.it_value.tv_usec = 0;
+    timer_stampa.it_interval.tv_sec = 1;  // Ripeti ogni 1 secondo
+    timer_stampa.it_interval.tv_usec = 0;
+
+    // Avvia il timer
+    setitimer(ITIMER_REAL, &timer_stampa, NULL);
+
+
     srand(time(NULL));
     const char* filename = "variabili.txt";
     SimulationParameters params = leggiVariabili(filename);
@@ -118,6 +139,7 @@ int main(int argc, char *argv[]) {
     printf("Kill all the processes\n");
     // Terminate child processes
     terminate_processes(a_pid, c_pid);
+
 
     // Wait for child processes to terminate
     int status;
