@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
     
     // Initialize shared memory and semaphore
     init_shared_memory_and_semaphore();
-    // print_shared_data(sem, shm_data);
+    print_shared_data(sem, shm_data);
 
     // Create and start the timer
     create_timer();
@@ -147,7 +147,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Wait for a certain amount of time
-    sleep(2);  // Wait for 2 seconds
+    sleep(8);  // Wait for 2 seconds
 
     // Print shared data after sleep
     print_shared_data(sem, shm_data);
