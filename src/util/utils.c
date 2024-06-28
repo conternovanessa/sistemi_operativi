@@ -122,13 +122,15 @@ void add_pid(pid_t pid, sem_t *sem, shared_data *shm_data){
 
 void print_shared_data(sem_t *sem, shared_data *shm_data) {
     print_line();
-    printf("\t SHARED DATA\n");
+    sem_wait(sem); // Lock the semaphore before accessing shared memory
+    printf("\t SHARED DATA:\n");
     printf("attivazioni: %d\n", shm_data->attivazioni);
     printf("scissioni: %d\n", shm_data->scissioni);
     printf("free_energy: %d\n", shm_data->free_energy);
     printf("consumata: %d\n", shm_data->consumata);
     printf("scorie: %d\n", shm_data->scorie);
     printf("num_processes: %d\n", shm_data->num_processes);
+    sem_post(sem); // Unlock the semaphore after accessing shared memory
     print_line();
 }
 
