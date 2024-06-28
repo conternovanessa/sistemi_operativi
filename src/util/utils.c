@@ -122,7 +122,7 @@ void add_pid(pid_t pid, sem_t *sem, shared_data *shm_data){
 
 void print_shared_data(sem_t *sem, shared_data *shm_data) {
     print_line();
-    printf("Shared Data:\n");
+    printf("\t SHARED DATA\n");
     printf("attivazioni: %d\n", shm_data->attivazioni);
     printf("scissioni: %d\n", shm_data->scissioni);
     printf("free_energy: %d\n", shm_data->free_energy);
