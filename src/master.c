@@ -17,7 +17,19 @@
 // Global variables for shared memory and semaphore
 shared_data *shm_data;
 sem_t *sem;
-pid_t a_pid,c_pid;
+pid_t a_pid, c_pid;
+timer_t timerid;
+volatile sig_atomic_t keep_running = 1;
+
+// Function to handle timer signal
+void print_shared_data_handler(int sig, siginfo_t *si, void *uc) {
+    print_shared_data(sem, shm_data);
+}
+
+// Function to handle program termination signals
+void handle_termination_signal(int sig) {
+    keep_running = 0;
+}
 
 void terminate_processes(pid_t a_pid, pid_t c_pid) {
     // Terminate attivatore process
@@ -85,6 +97,40 @@ void cleanup_shared_memory_and_semaphore() {
     }
 }
 
+void setup_timer() {
+    struct sigaction sa;
+    struct sigevent sev;
+    struct itimerspec its;
+
+    // Setup signal action
+    sa.sa_flags = SA_SIGINFO;
+    sa.sa_sigaction = print_shared_data_handler;
+    sigemptyset(&sa.sa_mask);
+    if (sigaction(SIGRTMIN, &sa, NULL) == -1) {
+        perror("sigaction failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Setup timer event
+    sev.sigev_notify = SIGEV_SIGNAL;
+    sev.sigev_signo = SIGRTMIN;
+    sev.sigev_value.sival_ptr = &timerid;
+    if (timer_create(CLOCK_REALTIME, &sev, &timerid) == -1) {
+        perror("timer_create failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Start the timer
+    its.it_value.tv_sec = 1;
+    its.it_value.tv_nsec = 0;
+    its.it_interval.tv_sec = 1;
+    its.it_interval.tv_nsec = 0;
+    if (timer_settime(timerid, 0, &its, NULL) == -1) {
+        perror("timer_settime failed");
+        exit(EXIT_FAILURE);
+    }
+}
+
 int main(int argc, char *argv[]) {
     srand(time(NULL));
     const char* filename = "variabili.txt";
@@ -100,6 +146,19 @@ int main(int argc, char *argv[]) {
     init_shared_memory_and_semaphore();
     print_shared_data(sem, shm_data);
 
+    // Setup timer to call print_shared_data every second
+    setup_timer();
+
+    // Setup signal handler for termination
+    struct sigaction sa_term;
+    sa_term.sa_handler = handle_termination_signal;
+    sigemptyset(&sa_term.sa_mask);
+    sa_term.sa_flags = 0;
+    if (sigaction(SIGINT, &sa_term, NULL) == -1) {
+        perror("sigaction failed");
+        exit(EXIT_FAILURE);
+    }
+
     // Fork attivatore process
     a_pid = create_attivatore();
 
@@ -109,11 +168,11 @@ int main(int argc, char *argv[]) {
         c_pid = create_atomo(&num_atomico, buffer, sem, shm_data);
     }
 
-    // Wait for a certain amount of time
-    sleep(2);  // Wait for 2 seconds
-
-    // Print shared data after sleep
-    print_shared_data(sem, shm_data);
+    // Main loop to keep the program running for a specific time
+    struct timespec req = {1, 0}; // 1 second sleep time
+    for (int i = 0; i < 8 && keep_running; i++) {
+        nanosleep(&req, NULL);
+    }
 
     printf("Kill all the processes\n");
     // Terminate child processes
