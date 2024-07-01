@@ -3,6 +3,7 @@
 #define UTILS_H
 
 #include <sys/types.h>
+#include <semaphore.h>
 
 // STRUCT DEFINITIONS
 typedef struct
