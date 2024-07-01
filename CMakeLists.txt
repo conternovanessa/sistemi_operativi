@@ -7,5 +7,5 @@ set(-D_GNU_SOURCE -Wvla -Wextra -Werror)
 
 add_executable(master src/master.c src/util/utils.c)
 add_executable(atomo src/atomo.c)
-add_executable(attivatore src/attivatore.c)
+add_executable(attivatore src/attivatore.c src/util/utils.c)
 # add_executable(alimentatore src/alimentatore.c)
