@@ -32,4 +32,6 @@ typedef struct
     int energy_explode_threshold;
 } SimulationParameters;
 
+typedef void (*timer_callback)();
+
 #endif

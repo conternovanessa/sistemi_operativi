@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <signal.h>
 #include <time.h>
 
 #include "headers/process.h"
@@ -134,5 +135,34 @@ void cleanup_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, cons
     // Unlink semaphore
     if (sem_unlink(sem_name) == -1) {
         perror("sem_unlink failed");
+    }
+}
+
+void create_timer(timer_callback callback, int tv_sec, int tv_nsec, int interval_tv_sec, int interval_tv_nsec){
+    struct sigevent sev;
+    struct itimerspec its;
+    timer_t timerid;
+
+    // Set up the signal event
+    sev.sigev_notify = SIGEV_THREAD;
+    sev.sigev_value.sival_ptr = &timerid;
+    sev.sigev_notify_function = callback;
+    sev.sigev_notify_attributes = NULL;
+
+    // Create the timer
+    if (timer_create(CLOCK_REALTIME, &sev, &timerid) == -1) {
+        perror("timer_create failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Set the timer to expire after 1 second, and every 1 second thereafter
+    its.it_value.tv_sec = tv_sec;
+    its.it_value.tv_nsec = tv_nsec;
+    its.it_interval.tv_sec = interval_tv_sec;
+    its.it_interval.tv_nsec = interval_tv_nsec;
+
+    if (timer_settime(timerid, 0, &its, NULL) == -1) {
+        perror("timer_settime failed");
+        exit(EXIT_FAILURE);
     }
 }

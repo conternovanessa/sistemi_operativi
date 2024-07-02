@@ -23,35 +23,6 @@ void timer_handler(union sigval sv) {
     print_shared_data(shm_data);
 }
 
-void create_timer() {
-    struct sigevent sev;
-    struct itimerspec its;
-    timer_t timerid;
-
-    // Set up the signal event
-    sev.sigev_notify = SIGEV_THREAD;
-    sev.sigev_value.sival_ptr = &timerid;
-    sev.sigev_notify_function = timer_handler;
-    sev.sigev_notify_attributes = NULL;
-
-    // Create the timer
-    if (timer_create(CLOCK_REALTIME, &sev, &timerid) == -1) {
-        perror("timer_create failed");
-        exit(EXIT_FAILURE);
-    }
-
-    // Set the timer to expire after 1 second, and every 1 second thereafter
-    its.it_value.tv_sec = 1;
-    its.it_value.tv_nsec = 0;
-    its.it_interval.tv_sec = 1;
-    its.it_interval.tv_nsec = 0;
-
-    if (timer_settime(timerid, 0, &its, NULL) == -1) {
-        perror("timer_settime failed");
-        exit(EXIT_FAILURE);
-    }
-}
-
 
 void terminate_processes(pid_t a_pid, pid_t c_pid) {
     // Terminate attivatore process
@@ -77,7 +48,7 @@ int main(int argc, char *argv[]) {
     print_shared_data(shm_data);
 
     // Create and start the timer
-    create_timer();
+    create_timer(timer_handler, 1, 0, 1, 0);
 
     // Fork attivatore process
     a_pid = create_attivatore();

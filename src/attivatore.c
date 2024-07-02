@@ -8,6 +8,7 @@
 #include <time.h>       // Include the header for timer functions
 
 #include "headers/utils.h"
+#include "headers/process.h"
 
 shared_data *shm_data;
 sem_t *sem;
@@ -27,35 +28,6 @@ void send_signal(){
 // Timer signal handler
 void timer_handler(union sigval sv) {
     send_signal();
-}
-
-void create_timer() {
-    struct sigevent sev;
-    struct itimerspec its;
-    timer_t timerid;
-
-    // Set up the signal event
-    sev.sigev_notify = SIGEV_THREAD;
-    sev.sigev_value.sival_ptr = &timerid;
-    sev.sigev_notify_function = timer_handler;
-    sev.sigev_notify_attributes = NULL;
-
-    // Create the timer
-    if (timer_create(CLOCK_REALTIME, &sev, &timerid) == -1) {
-        perror("timer_create failed");
-        exit(EXIT_FAILURE);
-    }
-
-    // Set the timer to expire after 2 seconds, and every 2 seconds thereafter
-    its.it_value.tv_sec = 2;
-    its.it_value.tv_nsec = 0;
-    its.it_interval.tv_sec = 2;
-    its.it_interval.tv_nsec = 0;
-
-    if (timer_settime(timerid, 0, &its, NULL) == -1) {
-        perror("timer_settime failed");
-        exit(EXIT_FAILURE);
-    }
 }
 
 int main(int argc, char *argv[]){
@@ -81,7 +53,7 @@ int main(int argc, char *argv[]){
     }
 
     // Create the timer
-    create_timer();
+    create_timer(timer_handler, 2, 0, 2, 0);
 
     pause();
 
