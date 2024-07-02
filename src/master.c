@@ -9,6 +9,7 @@
 #include <sys/mman.h>
 #include <semaphore.h>
 #include <time.h>
+
 #include "util/utils.h"
 
 #define SHARED_MEM_NAME "/shared_mem"
@@ -120,15 +121,11 @@ void cleanup_shared_memory_and_semaphore() {
 }
 
 int main(int argc, char *argv[]) {
-    srand(time(NULL));
     const char* filename = "variabili.txt";
     SimulationParameters params = leggiVariabili(filename);
     print_line();
     printf("PARAMETERS OBTAINED FROM THE FILE: \n");
     printSimulationParameters(&params);
-
-    int num_atomico = 0;
-    char buffer[20];
     
     // Initialize shared memory and semaphore
     init_shared_memory_and_semaphore();
@@ -142,8 +139,7 @@ int main(int argc, char *argv[]) {
 
     // Fork atomo process
     for (int i = 0; i < 1; i++) {
-        num_atomico = rand() % params.max_n_atomico + 1;
-        c_pid = create_atomo(&num_atomico, buffer, sem, shm_data);
+        c_pid = create_atomo(&params.max_n_atomico, sem, shm_data);
     }
 
     // Wait for a certain amount of time
