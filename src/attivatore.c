@@ -30,8 +30,17 @@ int main(int argc, char *argv[]){
         exit(EXIT_FAILURE);
     }
 
-    
+    sleep(4);
 
+    pid_t receiver_pid = shm_data->pid_array[0];
+
+    // Send SIGUSR1 to the receiver process
+    if (kill(receiver_pid, SIGUSR1) == -1) {
+        perror("kill");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Sent SIGUSR1 to process %d\n", receiver_pid);
 
     exit(EXIT_SUCCESS);
 }
