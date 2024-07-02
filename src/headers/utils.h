@@ -4,6 +4,9 @@
 
 #include <sys/types.h>
 
+#define SHARED_MEM_NAME "/shared_mem"
+#define SEMAPHORE_NAME "/semaphore"
+
 // STRUCT DEFINITIONS
 typedef struct
 {
