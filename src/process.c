@@ -1,7 +1,10 @@
 #include <semaphore.h>
+#include <fcntl.h>
+#include <sys/mman.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 #include "headers/process.h"
@@ -78,4 +81,58 @@ void add_pid(pid_t pid, sem_t *sem, shared_data *shm_data){
     sem_wait(sem);
     shm_data->pid_array[shm_data->num_processes++] = pid;
     sem_post(sem);
+}
+
+void init_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const char* shared_name, shared_data** shm_data) {
+    // Open shared memory
+    int shm_fd = shm_open(shared_name, O_CREAT | O_RDWR, 0666);
+    if (shm_fd == -1) {
+        perror("shm_open failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Set size of shared memory
+    if (ftruncate(shm_fd, sizeof(shared_data)) == -1) {
+        perror("ftruncate failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Map shared memory
+    *shm_data = mmap(0, sizeof(shared_data), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    if (*shm_data == MAP_FAILED) {
+        perror("mmap failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Initialize shared memory content
+    memset(*shm_data, 0, sizeof(shared_data));
+
+    // Create semaphore
+    *sem = sem_open(sem_name, O_CREAT, 0666, 1);
+    if (*sem == SEM_FAILED) {
+        perror("sem_open failed");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void cleanup_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const char* shared_name, shared_data** shm_data) {
+    // Unmap shared memory
+    if (munmap(*shm_data, sizeof(shared_data)) == -1) {
+        perror("munmap failed");
+    }
+
+    // Close shared memory
+    if (shm_unlink(shared_name) == -1) {
+        perror("shm_unlink failed");
+    }
+
+    // Close semaphore
+    if (sem_close(*sem) == -1) {
+        perror("sem_close failed");
+    }
+
+    // Unlink semaphore
+    if (sem_unlink(sem_name) == -1) {
+        perror("sem_unlink failed");
+    }
 }
