@@ -8,9 +8,6 @@
 
 #include "headers/utils.h"
 
-#define SHARED_MEM_NAME "/shared_mem"
-#define SEMAPHORE_NAME "/semaphore"
-
 int main(int argc, char *argv[]){
     // Open shared memory
     int shm_fd = shm_open(SHARED_MEM_NAME, O_RDWR, 0666);
