@@ -5,7 +5,8 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <semaphore.h>
-#include "util/utils.h"
+
+#include "headers/utils.h"
 
 #define SHARED_MEM_NAME "/shared_mem"
 #define SEMAPHORE_NAME "/semaphore"

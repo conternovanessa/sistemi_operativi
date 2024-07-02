@@ -10,7 +10,9 @@
 #include <semaphore.h>
 #include <time.h>
 
-#include "util/utils.h"
+#include "headers/utils.h"
+#include "headers/io.h"
+#include "headers/process.h"
 
 #define SHARED_MEM_NAME "/shared_mem"
 #define SEMAPHORE_NAME "/semaphore"
@@ -21,7 +23,7 @@ sem_t *sem;
 pid_t a_pid,c_pid;
 
 void timer_handler(union sigval sv) {
-    print_shared_data(sem, shm_data);
+    print_shared_data(shm_data);
 }
 
 void create_timer() {
@@ -129,7 +131,7 @@ int main(int argc, char *argv[]) {
     
     // Initialize shared memory and semaphore
     init_shared_memory_and_semaphore();
-    print_shared_data(sem, shm_data);
+    print_shared_data(shm_data);
 
     // Create and start the timer
     create_timer();
@@ -146,7 +148,7 @@ int main(int argc, char *argv[]) {
     sleep(8);  // Wait for 2 seconds
 
     // Print shared data after sleep
-    print_shared_data(sem, shm_data);
+    print_shared_data(shm_data);
 
     printf("Kill all the processes\n");
     // Terminate child processes
