@@ -35,10 +35,10 @@ typedef struct
 SimulationParameters leggiVariabili(const char *filename);
 
 pid_t create_attivatore();
-pid_t create_atomo(int *num_atomico, char *buffer, sem_t *sem, shared_data *shm_data);
+pid_t create_atomo(int *max_n_atomico, sem_t *sem, shared_data *shm_data);
+void add_pid(pid_t pid, sem_t *sem, shared_data *shm_data);
 
 void printSimulationParameters(const SimulationParameters *params);
-void add_pid(pid_t pid, sem_t *sem, shared_data *shm_data);
 void print_shared_data(sem_t *sem, shared_data *shm_data);
 void print_line();
 

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <semaphore.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "utils.h"
 
@@ -91,7 +92,15 @@ pid_t create_attivatore() {
     return a_pid;
 }
 
-pid_t create_atomo(int *num_atomico, char *buffer, sem_t *sem, shared_data *shm_data) {
+pid_t create_atomo(int *max_n_atomico, sem_t *sem, shared_data *shm_data) {
+    int pipe_fd[2];
+    if (pipe(pipe_fd) == -1) {
+        perror("pipe creation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    srand(time(NULL));
+
     // Fork atomo process
     pid_t c_pid = fork();
     if (c_pid == -1) {
@@ -100,7 +109,16 @@ pid_t create_atomo(int *num_atomico, char *buffer, sem_t *sem, shared_data *shm_
     }
     if (c_pid == 0) {
         // Child process: atomo
-        sprintf(buffer, "%d", *num_atomico);
+        close(pipe_fd[1]); // Close unused write end
+        int num_atomico;
+        if (read(pipe_fd[0], &num_atomico, sizeof(num_atomico)) != sizeof(num_atomico)) {
+            perror("read failed in child");
+            exit(EXIT_FAILURE);
+        }
+        close(pipe_fd[0]); // Close read end after reading
+
+        char buffer[20];
+        sprintf(buffer, "%d", num_atomico);
         char *atomo_args[] = {"atomo", buffer, NULL};
         if (execve("./atomo", atomo_args, NULL) == -1) {
             perror("execve failed for atomo");
@@ -108,8 +126,17 @@ pid_t create_atomo(int *num_atomico, char *buffer, sem_t *sem, shared_data *shm_
         }
     } else {
         // Parent process: update shared memory
+        close(pipe_fd[0]); // Close unused read end
+        int num_atomico = rand() % *max_n_atomico + 1;
+        if (write(pipe_fd[1], &num_atomico, sizeof(num_atomico)) != sizeof(num_atomico)) {
+            perror("write failed in parent");
+            exit(EXIT_FAILURE);
+        }
+        close(pipe_fd[1]); // Close write end after writing
+
         add_pid(c_pid, sem, shm_data);
     }
+
     return c_pid;
 }
 
