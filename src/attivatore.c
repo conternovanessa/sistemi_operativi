@@ -51,6 +51,7 @@ int main(int argc, char *argv[]){
         perror("sem_open failed");
         exit(EXIT_FAILURE);
     }
+    shm_data->attivazioni++;
 
     // Create the timer
     create_timer(timer_handler, 2, 0, 2, 0);
