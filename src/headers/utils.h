@@ -15,6 +15,7 @@ typedef struct
     int free_energy;
     int consumata;
     int scorie;
+    pid_t scorie_pid[100];
     int num_processes;
     pid_t pid_array[100];
 } shared_data;
