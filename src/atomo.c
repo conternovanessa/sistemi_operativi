@@ -17,6 +17,23 @@
 shared_data *shm_data;
 sem_t *sem;
 
+void cleanup_and_exit(int sig) {
+    printf("Received signal terminatore for atomo, cleaning up and exiting.\n");
+    fflush(stdout);
+    
+    // Unmap shared memory
+    if (munmap(shm_data, sizeof(shared_data)) == -1) {
+        perror("munmap failed");
+    }
+    
+    // Close semaphore
+    if (sem_close(sem) == -1) {
+        perror("sem_close failed");
+    }
+
+    exit(EXIT_SUCCESS);
+}
+
 void scissione(int minimo, int *num_atomico) {
     printf("scissione called\n");
     fflush(stdout);
@@ -104,6 +121,9 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
+    // Close the shared memory file descriptor as it's no longer needed
+    close(shm_fd);
+
     // Open semaphore
     sem = sem_open(SEMAPHORE_NAME, 0);
     if (sem == SEM_FAILED) {
@@ -111,8 +131,18 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    sigset_t set;
+    // Setup signal handler for SIGTERM
     struct sigaction sa;
+    sa.sa_handler = cleanup_and_exit;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+
+    if (sigaction(SIGTERM, &sa, NULL) == -1) {
+        perror("sigaction failed");
+        exit(EXIT_FAILURE);
+    }
+
+    sigset_t set;
     siginfo_t info;
 
     // Block the signal we want to wait for
@@ -143,9 +173,9 @@ int main(int argc, char *argv[]) {
         scissione(minimo, &num_atomico);
     }
 
-    // Unmap shared memory and close semaphore (unreachable in this example)
-    munmap(shm_data, sizeof(shared_data));
-    sem_close(sem);
+    while(1){
+        pause();
+    }
 
     exit(EXIT_SUCCESS);
 }

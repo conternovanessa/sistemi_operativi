@@ -31,10 +31,11 @@ void terminate_processes(pid_t a_pid, pid_t c_pid) {
     if (kill(a_pid, SIGTERM) == -1) {
         perror("Error terminating attivatore");
     }
-
-    // Terminate atomo process
-    if (kill(c_pid, SIGTERM) == -1) {
-        perror("Error terminating atomo");
+    
+    for(int i = 0; i < shm_data->num_processes; i++){
+        if (kill(shm_data->pid_array[i], SIGTERM) == -1) {
+            perror("Error terminating atomo");
+        }
     }
 }
 

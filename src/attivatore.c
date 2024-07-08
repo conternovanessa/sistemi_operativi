@@ -13,6 +13,23 @@
 shared_data *shm_data;
 sem_t *sem;
 
+void cleanup_and_exit(int sig) {
+    printf("Received signal Terminate for attivatore, cleaning up and exiting.\n");
+    fflush(stdout);
+    
+    // Unmap shared memory
+    if (munmap(shm_data, sizeof(shared_data)) == -1) {
+        perror("munmap failed");
+    }
+    
+    // Close semaphore
+    if (sem_close(sem) == -1) {
+        perror("sem_close failed");
+    }
+
+    exit(EXIT_SUCCESS);
+}
+
 void send_signal(){
     pid_t receiver_pid = shm_data->pid_array[0];
 
@@ -54,6 +71,17 @@ int main(int argc, char *argv[]){
         exit(EXIT_FAILURE);
     }
 
+    // Setup signal handler for SIGTERM
+    struct sigaction sa2;
+    sa2.sa_handler = cleanup_and_exit;
+    sigemptyset(&sa2.sa_mask);
+    sa2.sa_flags = 0;
+
+    if (sigaction(SIGTERM, &sa2, NULL) == -1) {
+        perror("sigaction failed");
+        exit(EXIT_FAILURE);
+    }
+
     struct sigaction sa;
 
     // Set up the signal handler
@@ -76,9 +104,9 @@ int main(int argc, char *argv[]){
         pause();
     }
 
-    // Unmap shared memory and close semaphore (unreachable in this example)
-    munmap(shm_data, sizeof(shared_data));
-    sem_close(sem);
+    // // Unmap shared memory and close semaphore (unreachable in this example)
+    // munmap(shm_data, sizeof(shared_data));
+    // sem_close(sem);
 
     exit(EXIT_SUCCESS);
 }
