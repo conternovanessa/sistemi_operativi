@@ -98,6 +98,12 @@ build CMakeFiles/atomo.dir/src/atomo.c.o: C_COMPILER__atomo_unscanned_Debug /hom
   OBJECT_DIR = CMakeFiles/atomo.dir
   OBJECT_FILE_DIR = CMakeFiles/atomo.dir/src
 
+build CMakeFiles/atomo.dir/src/io.c.o: C_COMPILER__atomo_unscanned_Debug /home/vconterno/CLionProjects/untitled/src/io.c || cmake_object_order_depends_target_atomo
+  DEP_FILE = CMakeFiles/atomo.dir/src/io.c.o.d
+  FLAGS = -g -std=gnu17 -fdiagnostics-color=always
+  OBJECT_DIR = CMakeFiles/atomo.dir
+  OBJECT_FILE_DIR = CMakeFiles/atomo.dir/src
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target atomo
@@ -106,7 +112,7 @@ build CMakeFiles/atomo.dir/src/atomo.c.o: C_COMPILER__atomo_unscanned_Debug /hom
 #############################################
 # Link the executable atomo
 
-build atomo: C_EXECUTABLE_LINKER__atomo_Debug CMakeFiles/atomo.dir/src/atomo.c.o
+build atomo: C_EXECUTABLE_LINKER__atomo_Debug CMakeFiles/atomo.dir/src/atomo.c.o CMakeFiles/atomo.dir/src/io.c.o
   FLAGS = -g
   OBJECT_DIR = CMakeFiles/atomo.dir
   POST_BUILD = :
