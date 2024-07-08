@@ -19,8 +19,10 @@ shared_data *shm_data;
 sem_t *sem;
 pid_t a_pid,c_pid;
 
-void timer_handler(union sigval sv) {
+void timer_handler(int sig) {
     print_shared_data(shm_data);
+    // Set the alarm again for the next second
+    alarm(1);
 }
 
 
@@ -42,13 +44,28 @@ int main(int argc, char *argv[]) {
     print_line();
     printf("PARAMETERS OBTAINED FROM THE FILE: \n");
     printSimulationParameters(&params);
-    
+
     // Initialize shared memory and semaphore
     init_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
     print_shared_data(shm_data);
 
-    // Create and start the timer
-    create_timer(timer_handler, 1, 0, 1, 0);
+    struct sigaction sa;
+
+    // Set up the signal handler
+    sa.sa_handler = timer_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+
+    if (sigaction(SIGALRM, &sa, NULL) == -1) {
+        perror("sigaction failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Set the initial alarm for 1 second
+    if (alarm(1) == -1) {
+        perror("alarm failed");
+        exit(EXIT_FAILURE);
+    }
 
     // Fork attivatore process
     a_pid = create_attivatore();
@@ -59,7 +76,13 @@ int main(int argc, char *argv[]) {
     }
 
     // Wait for a certain amount of time
-    sleep(6);  // Wait for 2 seconds
+
+    int count = 0;
+
+    while(count < 8){
+        pause();
+        count++;
+    }
 
     // Print shared data after sleep
     print_shared_data(shm_data);
