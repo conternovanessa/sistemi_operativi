@@ -26,8 +26,10 @@ void send_signal(){
 }
 
 // Timer signal handler
-void timer_handler(union sigval sv) {
+void timer_handler(int sig) {
     send_signal();
+    // Set the alarm again for the next second
+    alarm(2);
 }
 
 int main(int argc, char *argv[]){
@@ -52,10 +54,27 @@ int main(int argc, char *argv[]){
         exit(EXIT_FAILURE);
     }
 
-    // Create the timer
-    create_timer(timer_handler, 2, 0, 2, 0);
+    struct sigaction sa;
 
-    pause();
+    // Set up the signal handler
+    sa.sa_handler = timer_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+
+    if (sigaction(SIGALRM, &sa, NULL) == -1) {
+        perror("sigaction failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Set the initial alarm for 1 second
+    if (alarm(2) == -1) {
+        perror("alarm failed");
+        exit(EXIT_FAILURE);
+    }
+
+    while(1){
+        pause();
+    }
 
     // Unmap shared memory and close semaphore (unreachable in this example)
     munmap(shm_data, sizeof(shared_data));
