@@ -72,10 +72,12 @@ int main(int argc, char *argv[]){
         perror("alarm failed");
         exit(EXIT_FAILURE);
     }
+    shm_data ->attivazioni++;
 
     while(1){
         pause();
     }
+
 
     // Unmap shared memory and close semaphore (unreachable in this example)
     munmap(shm_data, sizeof(shared_data));

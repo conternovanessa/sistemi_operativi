@@ -17,7 +17,7 @@
 // Global variables for shared memory and semaphore
 shared_data *shm_data;
 sem_t *sem;
-pid_t a_pid,c_pid;
+pid_t a_pid,c_pid,al_pid;
 
 void timer_handler(int sig) {
     print_shared_data(shm_data);
@@ -69,17 +69,21 @@ int main(int argc, char *argv[]) {
 
     // Fork attivatore process
     a_pid = create_attivatore();
+    printf("Attivatore process created with PID %d\n", a_pid);
 
     // Fork atomo process
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < params.n_atom_init; i++) {
         c_pid = create_atomo(&params.max_n_atomico, sem, shm_data);
+        printf("Atomo process created with PID %d\n", c_pid);
     }
 
+    // Fork alimentatore process
+    al_pid = create_alimentatore; // non funziona
+    printf("Alimentatore process created with PID %d\n", al_pid);
+
     // Wait for a certain amount of time
-
     int count = 0;
-
-    while(count < 8){
+    while (count < 8) {
         pause();
         count++;
     }

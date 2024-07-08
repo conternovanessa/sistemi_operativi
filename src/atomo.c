@@ -68,7 +68,6 @@ void scissione(int minimo, int *num_atomico) {
         *num_atomico = *num_atomico - new_atomico;
         close(pipe_fd[1]); // Close write end after writing
 
-        add_pid(c_pid, sem, shm_data);
 
         // Parent process: update shared memory
         sem_wait(sem);
