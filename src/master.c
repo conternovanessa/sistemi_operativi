@@ -98,7 +98,10 @@ int main(int argc, char *argv[]) {
     // Wait for child processes to terminate
     int status;
     waitpid(a_pid, &status, 0);
-    waitpid(c_pid, &status, 0);
+    for(int i = 0; i < shm_data->num_processes; i++){
+        waitpid(shm_data->pid_array[i], &status, 0);
+    }
+
     printf("All processes terminated\n");
     print_line();
 
