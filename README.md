@@ -19,7 +19,7 @@ make
 ```
 
 ## Checklist:
-```
+
 - [ ] processo master
     - [ ] terminatore
       - [ ] Timeout  --> raggiungimento di SIM_DURATION
@@ -46,4 +46,4 @@ make
 - [ ] processo alimentatore
     - [ ] timer di STEP_ALIMENTAZIONE nanosecondi 
     - [ ] creazione di N_NUOVI_ATOMI
-```
+
