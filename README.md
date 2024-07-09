@@ -19,7 +19,7 @@ make
 ```
 
 ## Checklist:
-[]processo master
+- [] processo master
   [] terminatore
     []Timeout  --> raggiungimento di SIM_DURATION
     []Explode  --> FREE_ENERGY > ENERGU_EXPLODE_THRESHOLD
