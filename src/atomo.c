@@ -16,6 +16,7 @@
 
 shared_data *shm_data;
 sem_t *sem;
+pid_t pid_rem;
 
 void cleanup_and_exit(int sig) {
     printf("Received signal terminatore for atomo, cleaning up and exiting.\n");
@@ -34,10 +35,12 @@ void cleanup_and_exit(int sig) {
     exit(EXIT_SUCCESS);
 }
 
-void scissione(int minimo, int *num_atomico) {
+void scissione(int *num_atomico) {
     printf("scissione called\n");
     fflush(stdout);
-    
+    sem_wait(sem);
+    shm_data -> scissioni++;
+    sem_post(sem);
     int pipe_fd[2];
     if (pipe(pipe_fd) == -1) {
         perror("pipe creation failed");
@@ -101,7 +104,6 @@ int main(int argc, char *argv[]) {
     const char* filename = "variabili.txt";
     SimulationParameters params = leggiVariabili(filename);
 
-    int minimo = params.min_n_atomico;
     int num_atomico = atoi(argv[1]);
 
     printf("Received num_atomico: %d \n", num_atomico);
@@ -169,8 +171,28 @@ int main(int argc, char *argv[]) {
 
         printf("Calling scissione\n");
         fflush(stdout);
+        sem_wait(sem);
+        shm_data -> attivazioni++;
+        sem_post(sem);
 
-        scissione(minimo, &num_atomico);
+        if(num_atomico <= params.min_n_atomico){
+            sem_wait(sem);
+            shm_data -> scorie ++;
+            pid_rem = getpid();
+            for (int i = 0; i < shm_data->num_processes; i++) {
+                if (shm_data->pid_array[i] == pid_rem) {
+                    shm_data->pid_array[i] = 0;  // Set the PID to zero
+                    shm_data -> num_processes--;
+                    break;
+                }
+            }
+            sem_post(sem);
+            printf("killo il processo scoria\n");
+            kill(getpid(), SIGTERM);
+            printf("io non devo esserci \n");
+        }else {
+            scissione(&num_atomico);
+        }
     }
 
     while(1){
