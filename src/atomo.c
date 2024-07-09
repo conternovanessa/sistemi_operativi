@@ -20,24 +20,24 @@ sem_t *sem;
 void cleanup_and_exit(int sig) {
     printf("Received signal terminatore for atomo, cleaning up and exiting.\n");
     fflush(stdout);
-    
+
     // Unmap shared memory
     if (munmap(shm_data, sizeof(shared_data)) == -1) {
         perror("munmap failed");
     }
-    
+
     // Close semaphore
     if (sem_close(sem) == -1) {
-        perror("sem_close failed");
+        perror("sem_close in cleanup failed");
     }
 
     exit(EXIT_SUCCESS);
 }
 
-void scissione(int minimo, int *num_atomico) {
+void scissione(int *num_atomico) {
     printf("scissione called\n");
     fflush(stdout);
-    
+
     int pipe_fd[2];
     if (pipe(pipe_fd) == -1) {
         perror("pipe creation failed");
@@ -72,7 +72,7 @@ void scissione(int minimo, int *num_atomico) {
     } else {
         // Parent process: update shared memory
         close(pipe_fd[0]); // Close unused read end
-        int new_atomico = rand() % (*num_atomico-1) + 1;
+        int new_atomico = rand() % (*num_atomico - 1) + 1;
         printf("Parent process: new_atomico = %d\n", new_atomico);
         fflush(stdout);
 
@@ -82,7 +82,7 @@ void scissione(int minimo, int *num_atomico) {
         }
         *num_atomico = *num_atomico - new_atomico;
         close(pipe_fd[1]); // Close write end after writing
-    
+
         // Parent process: update shared memory
         sem_wait(sem);
         shm_data->pid_array[shm_data->num_processes++] = c_pid;
@@ -107,6 +107,8 @@ int main(int argc, char *argv[]) {
     fflush(stdout);
     printf("Receiver process PID: %d\n", getpid());
     fflush(stdout);
+
+
     // Open shared memory
     int shm_fd = shm_open(SHARED_MEM_NAME, O_RDWR, 0666);
     if (shm_fd == -1) {
@@ -153,7 +155,6 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    
     printf("Waiting for signal...\n");
     fflush(stdout);
 
@@ -171,7 +172,28 @@ int main(int argc, char *argv[]) {
             printf("Calling scissione\n");
             fflush(stdout);
 
-            scissione(minimo, &num_atomico);
+            if (num_atomico <= minimo) {
+                sem_wait(sem);
+                fflush(stdout);
+                
+                shm_data->scorie++;
+                pid_t rem_pid = getpid();
+                for (int i = 0; i < shm_data->num_processes; i++) {
+                    if (rem_pid == shm_data->pid_array[i]) {
+                        shm_data->pid_array[i] = 0;
+                        shm_data->num_processes--;
+                        break;
+                    }
+                }
+                sem_post(sem); // Ensure sem_post is called before closing
+
+                printf("I am dying\n");
+                fflush(stdout);
+                kill(rem_pid, SIGTERM);
+                printf("Non esisto\n");
+            } else {
+                scissione(&num_atomico);
+            }
         }
     }
 
