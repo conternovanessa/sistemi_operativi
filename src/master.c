@@ -83,8 +83,9 @@ int main(int argc, char *argv[]) {
 
     int count = 0;
     
-    while(count < 8){
-        pause(); 
+    while(count < 3){
+        pause();
+        sleep(1); 
         count++;
     }
 
