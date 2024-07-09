@@ -36,8 +36,6 @@ pid_t create_atomo(int *max_n_atomico, sem_t *sem, shared_data *shm_data) {
         exit(EXIT_FAILURE);
     }
 
-    srand(time(NULL));
-
     // Fork atomo process
     pid_t c_pid = fork();
     if (c_pid == -1) {

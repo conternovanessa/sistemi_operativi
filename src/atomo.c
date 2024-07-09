@@ -44,8 +44,6 @@ void scissione(int minimo, int *num_atomico) {
         exit(EXIT_FAILURE);
     }
 
-    srand(time(NULL));
-
     // Fork atomo process
     pid_t c_pid = fork();
     if (c_pid == -1) {
@@ -74,7 +72,7 @@ void scissione(int minimo, int *num_atomico) {
     } else {
         // Parent process: update shared memory
         close(pipe_fd[0]); // Close unused read end
-        int new_atomico = rand() % *num_atomico + 1;
+        int new_atomico = rand() % (*num_atomico-1) + 1;
         printf("Parent process: new_atomico = %d\n", new_atomico);
         fflush(stdout);
 
@@ -88,6 +86,7 @@ void scissione(int minimo, int *num_atomico) {
         // Parent process: update shared memory
         sem_wait(sem);
         shm_data->pid_array[shm_data->num_processes++] = c_pid;
+        shm_data->scissioni++;
         shm_data->free_energy += (*num_atomico * new_atomico - MAX(*num_atomico, new_atomico));
         sem_post(sem);
     }
@@ -106,7 +105,8 @@ int main(int argc, char *argv[]) {
 
     printf("Received num_atomico: %d \n", num_atomico);
     fflush(stdout);
-
+    printf("Receiver process PID: %d\n", getpid());
+    fflush(stdout);
     // Open shared memory
     int shm_fd = shm_open(SHARED_MEM_NAME, O_RDWR, 0666);
     if (shm_fd == -1) {
@@ -153,29 +153,27 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    printf("Receiver process PID: %d\n", getpid());
+    
     printf("Waiting for signal...\n");
     fflush(stdout);
 
-    // Wait for the signal
-    if (sigwaitinfo(&set, &info) == -1) {
-        perror("sigwaitinfo");
-        exit(EXIT_FAILURE);
+    // Wait for the signal in a loop
+    while (1) {
+        if (sigwaitinfo(&set, &info) == -1) {
+            perror("sigwaitinfo");
+            exit(EXIT_FAILURE);
+        }
+
+        if (info.si_signo == SIGUSR1) {
+            printf("Received SIGUSR1, performing specific action.\n");
+            fflush(stdout);
+
+            printf("Calling scissione\n");
+            fflush(stdout);
+
+            scissione(minimo, &num_atomico);
+        }
     }
 
-    if (info.si_signo == SIGUSR1) {
-        printf("Received SIGUSR1, performing specific action.\n");
-        fflush(stdout);
-
-        printf("Calling scissione\n");
-        fflush(stdout);
-
-        scissione(minimo, &num_atomico);
-    }
-
-    while(1){
-        pause();
-    }
-
-    exit(EXIT_SUCCESS);
+    return 0;
 }

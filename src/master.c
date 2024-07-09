@@ -50,6 +50,9 @@ int main(int argc, char *argv[]) {
     init_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
     print_shared_data(shm_data);
 
+    
+    srand(time(NULL));
+
     struct sigaction sa;
 
     // Set up the signal handler
@@ -72,7 +75,7 @@ int main(int argc, char *argv[]) {
     a_pid = create_attivatore();
 
     // Fork atomo process
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < params.n_atom_init; i++) {
         c_pid = create_atomo(&params.max_n_atomico, sem, shm_data);
     }
 
