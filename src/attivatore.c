@@ -31,9 +31,14 @@ void cleanup_and_exit(int sig) {
 }
 
 void send_signal(){
-    pid_t receiver_pid = shm_data->pid_array[0];
+    // Seed the random number generator
+    srand(time(NULL));
 
-    // Send SIGUSR1 to the receiver process
+    // Select a random index within the range of num_processes
+    int random_index = rand() % shm_data->num_processes;
+    pid_t receiver_pid = shm_data->pid_array[random_index];
+
+    // Send SIGUSR1 to the randomly selected receiver process
     if (kill(receiver_pid, SIGUSR1) == -1) {
         perror("kill");
         exit(EXIT_FAILURE);
