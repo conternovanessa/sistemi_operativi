@@ -104,9 +104,5 @@ int main(int argc, char *argv[]){
         pause();
     }
 
-    // // Unmap shared memory and close semaphore (unreachable in this example)
-    // munmap(shm_data, sizeof(shared_data));
-    // sem_close(sem);
-
     exit(EXIT_SUCCESS);
 }
