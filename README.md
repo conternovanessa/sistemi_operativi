@@ -25,7 +25,7 @@ make
       - [ ] Timeout  --> raggiungimento di SIM_DURATION
       - [ ] Explode  --> FREE_ENERGY > ENERGU_EXPLODE_THRESHOLD
       - [ ] Blackout --> prelievo di quantità superiore di quella possibile da prelevare
-      - [ ] meldown  --> fallimento di una fork
+      - [ ] meltdown  --> fallimento di una fork
     - [ ] far partire N_ATOM_INIT processi *atomo* in cui si scelga il numero atomico da 0 a MAX_N_ATOMICO
     - [ ] far partire *attivatore*
     - [ ] far partire *alimentatore*
