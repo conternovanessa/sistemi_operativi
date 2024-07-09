@@ -19,8 +19,9 @@ make
 ```
 
 ## Checklist:
-- [ ] processo master
-  [] terminatore
+```
+[ ] processo master
+  [ ] terminatore
     []Timeout  --> raggiungimento di SIM_DURATION
     []Explode  --> FREE_ENERGY > ENERGU_EXPLODE_THRESHOLD
     []Blackout --> prelievo di quantità superiore di quella possibile da prelevare
@@ -45,4 +46,4 @@ make
 []alimentatore
   []timer di STEP_ALIMENTAZIONE nanosecondi 
   []creazione di N_NUOVI_ATOMI
-  
+```
