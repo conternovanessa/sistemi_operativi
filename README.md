@@ -35,6 +35,7 @@ make
 - [ ] processo atomo       (mantenere privato il numero atomico di ciascun processo)
     - [ ] scissione, tenere conto di quante scissioni avvengono
     - [ ] calcolo dei nuovi numeri atomici n1 e n2
+    - [ ] se n1 o n2 sono uguali allora l'energia sarà massima altrimenti vale zero se uno dei due vale 1.
     - [ ] scorie, tenerne conto in base a quali numeri atomici sono minori o uguali a MIN_N_ATOMICO
     - [ ] aggiornamento della free_energy  N1*N2 -MAX(N1,N2)
     - [ ] la scissione viene comunicata dal processo attivatore e se ne tiene conto
