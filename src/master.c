@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
     // Initialize shared memory and semaphore
     init_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
     print_shared_data(shm_data);
-
+    srand(time(NULL));
     struct sigaction sa;
 
     // Set up the signal handler
@@ -71,16 +71,18 @@ int main(int argc, char *argv[]) {
     // Fork attivatore process
     a_pid = create_attivatore();
 
+
+
     // Fork atomo process
     for (int i = 0; i < params.n_atom_init; i++) {
         c_pid = create_atomo(&params.max_n_atomico, sem, shm_data);
     }
 
     // Wait for a certain amount of time
-
+srand(time(NULL));
     int count = 0;
     
-    while(count < 8){
+    while(count < 8){srand(time(NULL));
         pause(); 
         count++;
     }

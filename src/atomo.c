@@ -38,9 +38,7 @@ void cleanup_and_exit(int sig) {
 void scissione(int *num_atomico) {
     printf("scissione called\n");
     fflush(stdout);
-    sem_wait(sem);
-    shm_data -> scissioni++;
-    sem_post(sem);
+
     int pipe_fd[2];
     if (pipe(pipe_fd) == -1) {
         perror("pipe creation failed");
@@ -77,7 +75,8 @@ void scissione(int *num_atomico) {
     } else {
         // Parent process: update shared memory
         close(pipe_fd[0]); // Close unused read end
-        int new_atomico = rand() % *num_atomico + 1;
+        int new_atomico = (rand() % *num_atomico-1) + 1;
+
         printf("Parent process: new_atomico = %d\n", new_atomico);
         fflush(stdout);
 
@@ -96,7 +95,9 @@ void scissione(int *num_atomico) {
     }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc
+,
+char *argv[]) {
     if (argc < 2) {
         perror("Necessary at least two inputs");
         exit(EXIT_FAILURE);
@@ -158,45 +159,48 @@ int main(int argc, char *argv[]) {
     printf("Receiver process PID: %d\n", getpid());
     printf("Waiting for signal...\n");
     fflush(stdout);
+    while(1) {
 
-    // Wait for the signal
-    if (sigwaitinfo(&set, &info) == -1) {
-        perror("sigwaitinfo");
-        exit(EXIT_FAILURE);
-    }
 
-    if (info.si_signo == SIGUSR1) {
-        printf("Received SIGUSR1, performing specific action.\n");
-        fflush(stdout);
-
-        printf("Calling scissione\n");
-        fflush(stdout);
-        sem_wait(sem);
-        shm_data -> attivazioni++;
-        sem_post(sem);
-
-        if(num_atomico <= params.min_n_atomico){
-            sem_wait(sem);
-            shm_data -> scorie ++;
-            pid_rem = getpid();
-            for (int i = 0; i < shm_data->num_processes; i++) {
-                if (shm_data->pid_array[i] == pid_rem) {
-                    shm_data->pid_array[i] = 0;  // Set the PID to zero
-                    shm_data -> num_processes--;
-                    break;
-                }
-            }
-            sem_post(sem);
-            printf("killo il processo scoria\n");
-            kill(getpid(), SIGTERM);
-            printf("io non devo esserci \n");
-        }else {
-            scissione(&num_atomico);
+        // Wait for the signal
+        if (sigwaitinfo(&set, &info) == -1) {
+            perror("sigwaitinfo");
+            exit(EXIT_FAILURE);
         }
-    }
 
-    while(1){
-        pause();
+        if (info.si_signo == SIGUSR1) {
+            printf("Received SIGUSR1, performing specific action.\n");
+            fflush(stdout);
+
+            printf("Calling scissione\n");
+            fflush(stdout);
+            sem_wait(sem);
+            shm_data->attivazioni++;
+            sem_post(sem);
+
+            if (num_atomico <= params.min_n_atomico) {
+                sem_wait(sem);
+                shm_data->scorie++;
+                pid_rem = getpid();
+                for (int i = 0; i < shm_data->num_processes; i++) {
+                    if (shm_data->pid_array[i] == pid_rem) {
+                        shm_data->pid_array[i] = 0;  // Set the PID to zero
+                        shm_data->num_processes--;
+                        break;
+                    }
+                }
+                sem_post(sem);
+                printf("killo il processo scoria\n");
+                kill(getpid(), SIGTERM);
+                printf("io non devo esserci \n");
+            } else {
+                scissione(&num_atomico);
+                sem_wait(sem);
+                shm_data->scissioni++;
+                sem_post(sem);
+
+            }
+        }
     }
 
     exit(EXIT_SUCCESS);
