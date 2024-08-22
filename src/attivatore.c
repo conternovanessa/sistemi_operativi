@@ -9,6 +9,7 @@
 
 #include "headers/utils.h"
 #include "headers/process.h"
+#include "headers/io.h"
 
 shared_data *shm_data;
 sem_t *sem;
@@ -55,6 +56,10 @@ void timer_handler(int sig) {
 }
 
 int main(int argc, char *argv[]){
+
+    const char* filename = "variabili.txt";
+    SimulationParameters params = leggiVariabili(filename);
+
     // Open shared memory
     int shm_fd = shm_open(SHARED_MEM_NAME, O_RDWR, 0666);
     if (shm_fd == -1) {
@@ -100,7 +105,7 @@ int main(int argc, char *argv[]){
     }
 
     // Set the initial alarm for 1 second
-    if (alarm(2) == -1) {
+    if (alarm(params.step_attivatore) == -1) {
         perror("alarm failed");
         exit(EXIT_FAILURE);
     }
