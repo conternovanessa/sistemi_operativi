@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -17,10 +16,11 @@
 // Global variables for shared memory and semaphore
 shared_data *shm_data;
 sem_t *sem;
-pid_t a_pid,c_pid;
+pid_t a_pid; // PID of the attivatore process
 
 int ENERGY_DEMAND;
 
+// Signal handler for timer
 void timer_handler(int sig) {
     if (sig == SIGALRM) {
         // Decrease ENERGY_DEMAND by 2
@@ -48,15 +48,16 @@ void timer_handler(int sig) {
     }
 }
 
-
-void terminate_processes(pid_t a_pid, pid_t c_pid) {
+// Function to terminate processes
+void terminate_processes(pid_t a_pid, pid_t *atomo_pids, int num_atoms) {
     // Terminate attivatore process
     if (kill(a_pid, SIGTERM) == -1) {
         perror("Error terminating attivatore");
     }
-    
-    for(int i = 0; i < shm_data->num_processes; i++){
-        if (kill(shm_data->pid_array[i], SIGTERM) == -1) {
+
+    // Terminate atomo processes
+    for (int i = 0; i < num_atoms; i++) {
+        if (kill(atomo_pids[i], SIGTERM) == -1) {
             perror("Error terminating atomo");
         }
     }
@@ -96,38 +97,50 @@ int main(int argc, char *argv[]) {
     // Fork attivatore process
     a_pid = create_attivatore();
 
+    // Fork atomo processes
+    pid_t *atomo_pids = malloc(params.n_atom_init * sizeof(pid_t));
+    if (atomo_pids == NULL) {
+        perror("Failed to allocate memory for atomo PIDs");
+        exit(EXIT_FAILURE);
+    }
 
-
-    // Fork atomo process
     for (int i = 0; i < params.n_atom_init; i++) {
-        c_pid = create_atomo(&params.max_n_atomico, sem, shm_data);
+        atomo_pids[i] = create_atomo(&params.max_n_atomico, sem, shm_data);
     }
 
-    // Wait for a certain amount of time
-    srand(time(NULL));
-    int count = 0;
-    
-    while(count < params.sim_duration){
+    // Print start time
+    time_t start_time = time(NULL);
+
+    // Wait for simulation duration using a for loop
+    for (int count = 0; count < params.sim_duration; count++) {
         sleep(1);
-        count++;
     }
 
-    // Print shared data after sleep
+    // Print shared data after simulation time ends
     print_shared_data(shm_data);
+
+    // Calculate elapsed time for debugging
+    time_t end_time = time(NULL);
+    printf("Simulation ended. Duration: %ld seconds\n", end_time - start_time);
 
     printf("Kill all the processes\n");
     // Terminate child processes
-    terminate_processes(a_pid, c_pid);
+    terminate_processes(a_pid, atomo_pids, params.n_atom_init);
 
     // Wait for child processes to terminate
     int status;
     waitpid(a_pid, &status, 0);
-    waitpid(c_pid, &status, 0);
+    for (int i = 0; i < params.n_atom_init; i++) {
+        waitpid(atomo_pids[i], &status, 0);
+    }
     printf("All processes terminated\n");
     print_line();
 
     // Cleanup shared memory and semaphore
     cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
+
+    // Free allocated memory
+    free(atomo_pids);
 
     exit(EXIT_SUCCESS);
 }
