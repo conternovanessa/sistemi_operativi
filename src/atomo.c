@@ -62,7 +62,7 @@ void scissione(int *num_atomico) {
             exit(EXIT_FAILURE);
         }
         close(pipe_fd[0]); // Close read end after reading
-        printf("Child process: read new_atomico = %d\n", new_atomico);
+        //printf("Child process: read new_atomico = %d\n", new_atomico);
         fflush(stdout);
 
         char buffer[20];
@@ -75,7 +75,7 @@ void scissione(int *num_atomico) {
     } else {
         // Parent process: update shared memory
         close(pipe_fd[0]); // Close unused read end
-        int new_atomico = (rand() % *num_atomico-1) + 1;
+        int new_atomico = (rand() % (*num_atomico-1)) + 1;
 
         printf("Parent process: new_atomico = %d\n", new_atomico);
         fflush(stdout);
@@ -86,7 +86,8 @@ void scissione(int *num_atomico) {
         }
         *num_atomico = *num_atomico - new_atomico;
         close(pipe_fd[1]); // Close write end after writing
-    
+
+        printf("Child process: read new_atomico = %d\n", *num_atomico);
         // Parent process: update shared memory
         sem_wait(sem);
         shm_data->pid_array[shm_data->num_processes++] = c_pid;
