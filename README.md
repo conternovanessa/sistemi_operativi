@@ -1002,19 +1002,20 @@ make
     - [x] far partire *attivatore*
     - [ ] far partire *alimentatore*
     - [x] STAMPA stato corrente ogni secondo
-    - [ ] preleva una quantità di energia da ENERGY_DEMAND
+    - [x] preleva una quantità di energia da ENERGY_DEMAND
   
 - [ ] processo atomo       (mantenere privato il numero atomico di ciascun processo)
     - [x] scissione, tenere conto di quante scissioni avvengono
     - [x] calcolo dei nuovi numeri atomici n1 e n2
-    - [ ] se n1 o n2 sono uguali allora l'energia sarà massima altrimenti vale zero se uno dei due vale 1.
+    - [x] se n1 o n2 sono uguali allora l'energia sarà massima altrimenti vale zero se uno dei due vale 1.
     - [x] scorie, tenerne conto in base a quali numeri atomici sono minori o uguali a MIN_N_ATOMICO
     - [x] aggiornamento della free_energy  N1*N2 -MAX(N1,N2)
     - [x] la scissione viene comunicata dal processo attivatore e se ne tiene conto
 
-- [ ] processo attivatore
-    - [x] timer di STEP_ATTIVATORE
+- [x] processo attivatore
+    - [ ] timer di STEP_ATTIVATORE
     - [x] comunicazione ad atomo di scindere
+  
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
