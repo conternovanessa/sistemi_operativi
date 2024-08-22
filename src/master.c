@@ -19,10 +19,33 @@ shared_data *shm_data;
 sem_t *sem;
 pid_t a_pid,c_pid;
 
+int ENERGY_DEMAND;
+
 void timer_handler(int sig) {
-    print_shared_data(shm_data);
-    // Set the alarm again for the next second
-    alarm(1);
+    if (sig == SIGALRM) {
+        // Decrease ENERGY_DEMAND by 2
+        ENERGY_DEMAND -= 2;
+        if (ENERGY_DEMAND < 0) {
+            ENERGY_DEMAND = 0; // Ensure it doesn't go below 0
+        }
+
+        // Synchronize access to shared memory
+        sem_wait(sem);
+
+        // Increase consumata in shared memory by 2
+        shm_data->consumata += 2;
+
+        // Release the semaphore
+        sem_post(sem);
+
+        // Print updated shared data and energy demand
+        print_shared_data(shm_data);
+        printf("ENERGY_DEMAND updated: %d\n", ENERGY_DEMAND);
+        printf("consumata in shared memory updated: %d\n", shm_data->consumata);
+
+        // Set the alarm again for the next second
+        alarm(1);
+    }
 }
 
 
@@ -45,7 +68,9 @@ int main(int argc, char *argv[]) {
     print_line();
     printf("PARAMETERS OBTAINED FROM THE FILE: \n");
     printSimulationParameters(&params);
-    
+
+    ENERGY_DEMAND = params.energy_demand;
+
     // Initialize shared memory and semaphore
     init_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
     print_shared_data(shm_data);
@@ -79,11 +104,11 @@ int main(int argc, char *argv[]) {
     }
 
     // Wait for a certain amount of time
-srand(time(NULL));
+    srand(time(NULL));
     int count = 0;
     
-    while(count < 8){srand(time(NULL));
-        pause(); 
+    while(count < params.sim_duration){
+        sleep(1);
         count++;
     }
 
