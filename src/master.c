@@ -17,6 +17,7 @@
 shared_data *shm_data;
 sem_t *sem;
 pid_t a_pid; // PID of the attivatore process
+pid_t al_pid;
 
 int ENERGY_DEMAND;
 
@@ -40,8 +41,8 @@ void timer_handler(int sig) {
 
         // Print updated shared data and energy demand
         print_shared_data(shm_data);
-        printf("ENERGY_DEMAND updated: %d\n", ENERGY_DEMAND);
-        printf("consumata in shared memory updated: %d\n", shm_data->consumata);
+        //printf("ENERGY_DEMAND updated: %d\n", ENERGY_DEMAND);
+        //printf("consumata in shared memory updated: %d\n", shm_data->consumata);
 
         // Set the alarm again for the next second
         alarm(1);
@@ -49,7 +50,7 @@ void timer_handler(int sig) {
 }
 
 // Function to terminate processes
-void terminate_processes(pid_t a_pid, pid_t *atomo_pids, int num_atoms) {
+void terminate_processes(pid_t a_pid, pid_t *atomo_pids, int num_atoms, pid_t al_pid) {
     // Terminate attivatore process
     if (kill(a_pid, SIGTERM) == -1) {
         perror("Error terminating attivatore");
@@ -60,6 +61,10 @@ void terminate_processes(pid_t a_pid, pid_t *atomo_pids, int num_atoms) {
         if (kill(atomo_pids[i], SIGTERM) == -1) {
             perror("Error terminating atomo");
         }
+    }
+
+    if (kill(al_pid, SIGTERM) == -1) {
+        perror("Error terminating alimentatore");
     }
 }
 
@@ -108,12 +113,17 @@ int main(int argc, char *argv[]) {
         atomo_pids[i] = create_atomo(&params.max_n_atomico, sem, shm_data);
     }
 
+    al_pid = create_alimentatore();
+
     // Print start time
     time_t start_time = time(NULL);
+    printf("sim duration %d\n", params.sim_duration );
 
     // Wait for simulation duration using a for loop
     for (int count = 0; count < params.sim_duration; count++) {
         sleep(1);
+        printf("count %d\n", count );
+        fflush(stdout);
     }
 
     // Print shared data after simulation time ends
@@ -121,11 +131,11 @@ int main(int argc, char *argv[]) {
 
     // Calculate elapsed time for debugging
     time_t end_time = time(NULL);
-    printf("Simulation ended. Duration: %ld seconds\n", end_time - start_time);
+    //printf("Simulation ended. Duration: %ld seconds\n", end_time - start_time);
 
-    printf("Kill all the processes\n");
+    //printf("Kill all the processes\n");
     // Terminate child processes
-    terminate_processes(a_pid, atomo_pids, params.n_atom_init);
+    terminate_processes(a_pid, atomo_pids, params.n_atom_init, al_pid);
 
     // Wait for child processes to terminate
     int status;

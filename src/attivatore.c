@@ -15,7 +15,7 @@ shared_data *shm_data;
 sem_t *sem;
 
 void cleanup_and_exit(int sig) {
-    printf("Received signal Terminate for attivatore, cleaning up and exiting.\n");
+    //printf("Received signal Terminate for attivatore, cleaning up and exiting.\n");
     fflush(stdout);
     
     // Unmap shared memory
@@ -45,7 +45,7 @@ void send_signal(){
         exit(EXIT_FAILURE);
     }
 
-    printf("Sent SIGUSR1 to process %d\n", receiver_pid);
+    //printf("Sent SIGUSR1 to process %d\n", receiver_pid);
 }
 
 // Timer signal handler
@@ -115,8 +115,8 @@ int main(int argc, char *argv[]){
     }
 
     // // Unmap shared memory and close semaphore (unreachable in this example)
-    // munmap(shm_data, sizeof(shared_data));
-    // sem_close(sem);
+    munmap(shm_data, sizeof(shared_data));
+    sem_close(sem);
 
     exit(EXIT_SUCCESS);
 }

@@ -19,7 +19,7 @@ sem_t *sem;
 pid_t pid_rem;
 
 void cleanup_and_exit(int sig) {
-    printf("Received signal terminatore for atomo, cleaning up and exiting.\n");
+    //printf("Received signal terminatore for atomo, cleaning up and exiting.\n");
     fflush(stdout);
     
     // Unmap shared memory
@@ -36,7 +36,7 @@ void cleanup_and_exit(int sig) {
 }
 
 void scissione(int *num_atomico) {
-    printf("scissione called\n");
+    //printf("scissione called\n");
     fflush(stdout);
 
     int pipe_fd[2];
@@ -87,7 +87,7 @@ void scissione(int *num_atomico) {
         *num_atomico = *num_atomico - new_atomico;
         close(pipe_fd[1]); // Close write end after writing
 
-        printf("Child process: read new_atomico = %d\n", *num_atomico);
+        printf("Child process: atomico = %d\n", *num_atomico);
         // Parent process: update shared memory
         sem_wait(sem);
         shm_data->pid_array[shm_data->num_processes++] = c_pid;
@@ -108,7 +108,7 @@ char *argv[]) {
 
     int num_atomico = atoi(argv[1]);
 
-    printf("Received num_atomico: %d \n", num_atomico);
+    //printf("Received num_atomico: %d \n", num_atomico);
     fflush(stdout);
 
     // Open shared memory
@@ -157,8 +157,8 @@ char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    printf("Receiver process PID: %d\n", getpid());
-    printf("Waiting for signal...\n");
+    //printf("Receiver process PID: %d\n", getpid());
+    //printf("Waiting for signal...\n");
     fflush(stdout);
     while(1) {
 
@@ -170,10 +170,10 @@ char *argv[]) {
         }
 
         if (info.si_signo == SIGUSR1) {
-            printf("Received SIGUSR1, performing specific action.\n");
+            //printf("Received SIGUSR1, performing specific action.\n");
             fflush(stdout);
 
-            printf("Calling scissione\n");
+            //printf("Calling scissione\n");
             fflush(stdout);
             sem_wait(sem);
             shm_data->attivazioni++;

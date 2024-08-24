@@ -11,6 +11,22 @@
 #include "headers/process.h"
 #include "headers/utils.h"
 
+pid_t create_alimentatore(){
+    pid_t al_pid = fork();
+    if (al_pid == -1) {
+        perror("fork for alimentatore did not go well");
+        exit(EXIT_FAILURE);
+    }
+    if (al_pid == 0) {
+        // Child process: alimentatore
+        char *alimentatore_args[] = {"alimentatore", NULL};
+        if (execve("./alimentatore", alimentatore_args, NULL) == -1) {
+            perror("execve failed for alimentatore");
+            exit(EXIT_FAILURE);
+        }
+    }
+    return al_pid;
+}
 pid_t create_attivatore() {
     // Fork attivatore process
     pid_t a_pid = fork();
