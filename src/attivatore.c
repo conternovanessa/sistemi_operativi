@@ -15,6 +15,7 @@ shared_data *shm_data;
 sem_t *sem;
 
 void send_signal(){
+
     // Seed the random number generator
     srand(time(NULL));
 
@@ -27,15 +28,11 @@ void send_signal(){
         perror("kill");
         exit(EXIT_FAILURE);
     }
-
-    //printf("Sent SIGUSR1 to process %d\n", receiver_pid);
 }
 
 // Timer signal handler
 void timer_handler(int sig) {
     send_signal();
-    // Set the alarm again for the next second
-    alarm(2);
 }
 
 // Signal handler for SIGTERM
@@ -53,12 +50,12 @@ int main(int argc, char *argv[]){
     connect_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
 
     // Setup signal handler for SIGTERM
-    struct sigaction sa2;
-    sa2.sa_handler = sigterm_handler;
-    sigemptyset(&sa2.sa_mask);
-    sa2.sa_flags = 0;
+    struct sigaction sig_term;
+    sig_term.sa_handler = sigterm_handler;
+    sigemptyset(&sig_term.sa_mask);
+    sig_term.sa_flags = 0;
 
-    if (sigaction(SIGTERM, &sa2, NULL) == -1) {
+    if (sigaction(SIGTERM, &sig_term, NULL) == -1) {
         perror("sigaction failed");
         exit(EXIT_FAILURE);
     }
@@ -75,11 +72,9 @@ int main(int argc, char *argv[]){
         exit(EXIT_FAILURE);
     }
 
-    // Set the initial alarm for 1 second
-    if (alarm(params.step_attivatore) == -1) {
-        perror("alarm failed");
-        exit(EXIT_FAILURE);
-    }
+    // Use the create_timer function to create a timer that sends SIGUSR1
+    create_timer(SIGALRM, params.step_attivatore, 0, params.step_attivatore, 0, &sem, &shm_data);
+
 
     while(1){
         pause();
