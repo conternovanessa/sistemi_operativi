@@ -139,6 +139,7 @@ void init_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const c
 }
 
 void connect_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const char* shared_name, shared_data** shm_data) {
+
     // Open shared memory
     int shm_fd = shm_open(shared_name, O_RDWR, 0666);
     if (shm_fd == -1) {
@@ -161,6 +162,7 @@ void connect_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, cons
         perror("sem_open failed");
         exit(EXIT_FAILURE);
     }
+
 }
 
 void cleanup_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const char* shared_name, shared_data** shm_data) {
@@ -185,6 +187,7 @@ void cleanup_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, cons
     }
 }
 
+// Cleanup function
 void cleanup(sem_t** sem, shared_data** shm_data) {
     // Unmap shared memory
     if (*shm_data != MAP_FAILED) {
@@ -205,15 +208,19 @@ void create_timer(int signo, int tv_sec, int tv_nsec, int interval_tv_sec, int i
     // Set up the signal event
     sev.sigev_notify = SIGEV_SIGNAL;
     sev.sigev_signo = signo;          
+    sev.sigev_notify = SIGEV_SIGNAL;
+    sev.sigev_signo = signo;          
     sev.sigev_value.sival_ptr = &timerid;
 
     // Create the timer
     if (timer_create(CLOCK_REALTIME, &sev, &timerid) == -1) {
         perror("timer_create failed");
         cleanup(sem, shm_data);
+        cleanup(sem, shm_data);
         exit(EXIT_FAILURE);
     }
 
+    // Set the timer to expire at the given intervals
     // Set the timer to expire at the given intervals
     its.it_value.tv_sec = tv_sec;
     its.it_value.tv_nsec = tv_nsec;
@@ -222,6 +229,7 @@ void create_timer(int signo, int tv_sec, int tv_nsec, int interval_tv_sec, int i
 
     if (timer_settime(timerid, 0, &its, NULL) == -1) {
         perror("timer_settime failed");
+        cleanup(sem, shm_data);
         cleanup(sem, shm_data);
         exit(EXIT_FAILURE);
     }

@@ -23,7 +23,6 @@ void sigterm_handler(int sig) {
 // Handler for the timer using SIGUSR1
 void timer_handler(int sig) {
     // Create N_NUOVI_ATOMI processes
-    printf("Alimentatore called\n");
     for(int i = 0; i < params.n_nuovi_atomi; i++){
         create_atomo(&params.max_n_atomico, sem, shm_data);
     }
