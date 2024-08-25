@@ -120,10 +120,11 @@ int main(int argc, char *argv[]) {
     printf("sim duration %d\n", params.sim_duration );
 
     // Wait for simulation duration using a for loop
-    for (int count = 0; count < params.sim_duration; count++) {
+    for (int count = 1; count <= params.sim_duration; count++) {
         sleep(1);
         printf("count %d\n", count );
         fflush(stdout);
+
     }
 
     // Print shared data after simulation time ends
@@ -136,6 +137,7 @@ int main(int argc, char *argv[]) {
     //printf("Kill all the processes\n");
     // Terminate child processes
     terminate_processes(a_pid, atomo_pids, params.n_atom_init, al_pid);
+    printf("TIMEOUT \n");
 
     // Wait for child processes to terminate
     int status;

@@ -14,17 +14,17 @@ SimulationParameters params;
 
 // Handler per il timer
 void timer_handler(int sig) {
-    printf("sei in alimentatore\n");
+    //printf("sei in alimentatore\n");
 
     // Crea N_NUOVI_ATOMI processi atomo
     for (int i = 0; i < params.n_nuovi_atomi; i++) {
-        printf("create new atoms \n");
+        //printf("create new atoms \n");
         pid_t pid = create_atomo(&params.max_n_atomico, sem, shm_data);
         if (pid == -1) {
             perror("Failed to create atomo");
             exit(EXIT_FAILURE);
         }
-        printf("Created atomo process with PID: %d\n", pid);
+        //printf("Created atomo process with PID: %d\n", pid);
     }
 }
 
