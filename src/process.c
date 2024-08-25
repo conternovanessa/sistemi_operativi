@@ -132,6 +132,33 @@ void init_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const c
     }
 }
 
+void connect_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const char* shared_name, shared_data** shm_data) {
+
+    // Open shared memory
+    int shm_fd = shm_open(shared_name, O_RDWR, 0666);
+    if (shm_fd == -1) {
+        perror("shm_open failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Map shared memory
+    *shm_data = mmap(0, sizeof(shared_data), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    if (*shm_data == MAP_FAILED) {
+        perror("mmap failed");
+        exit(EXIT_FAILURE);
+    }
+
+    close(shm_fd);
+
+    // Open semaphore
+    *sem = sem_open(sem_name, 0);
+    if (*sem == SEM_FAILED) {
+        perror("sem_open failed");
+        exit(EXIT_FAILURE);
+    }
+
+}
+
 void cleanup_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const char* shared_name, shared_data** shm_data) {
     // Unmap shared memory
     if (munmap(*shm_data, sizeof(shared_data)) == -1) {
@@ -154,24 +181,37 @@ void cleanup_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, cons
     }
 }
 
-void create_timer(timer_callback callback, int tv_sec, int tv_nsec, int interval_tv_sec, int interval_tv_nsec){
+// Cleanup function
+void cleanup(sem_t** sem, shared_data** shm_data) {
+    // Unmap shared memory
+    if (*shm_data != MAP_FAILED) {
+        munmap(*shm_data, sizeof(shared_data));
+    }
+
+    // Close semaphore
+    if (*sem != SEM_FAILED) {
+        sem_close(*sem);
+    }
+}
+
+void create_timer(int signo, int tv_sec, int tv_nsec, int interval_tv_sec, int interval_tv_nsec, sem_t** sem, shared_data** shm_data) {
     struct sigevent sev;
     struct itimerspec its;
     timer_t timerid;
 
     // Set up the signal event
-    sev.sigev_notify = SIGEV_THREAD;
+    sev.sigev_notify = SIGEV_SIGNAL;
+    sev.sigev_signo = signo;          
     sev.sigev_value.sival_ptr = &timerid;
-    sev.sigev_notify_function = callback;
-    sev.sigev_notify_attributes = NULL;
 
     // Create the timer
     if (timer_create(CLOCK_REALTIME, &sev, &timerid) == -1) {
         perror("timer_create failed");
+        cleanup(sem, shm_data);
         exit(EXIT_FAILURE);
     }
 
-    // Set the timer to expire after 1 second, and every 1 second thereafter
+    // Set the timer to expire at the given intervals
     its.it_value.tv_sec = tv_sec;
     its.it_value.tv_nsec = tv_nsec;
     its.it_interval.tv_sec = interval_tv_sec;
@@ -179,6 +219,7 @@ void create_timer(timer_callback callback, int tv_sec, int tv_nsec, int interval
 
     if (timer_settime(timerid, 0, &its, NULL) == -1) {
         perror("timer_settime failed");
+        cleanup(sem, shm_data);
         exit(EXIT_FAILURE);
     }
 }
