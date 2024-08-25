@@ -123,6 +123,11 @@ int main(int argc, char *argv[]) {
         printf("sim_duration %d\n", params.sim_duration );
         fflush(stdout);
         params.sim_duration--;
+        if (shm_data -> free_energy > params.energy_explode_threshold) {
+            printf("EXPLODE! \n");
+            terminate_processes(a_pid, atomo_pids, params.n_atom_init, al_pid);
+            break;  // Esce dal ciclo principale
+        }
     }
 
     // Print shared data after simulation time ends
