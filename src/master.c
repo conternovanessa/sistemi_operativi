@@ -128,6 +128,11 @@ int main(int argc, char *argv[]) {
             terminate_processes(a_pid, atomo_pids, params.n_atom_init, al_pid);
             break;  // Esce dal ciclo principale
         }
+        if (ENERGY_DEMAND <=0) {
+            printf("BLACKOUT! \n");
+            terminate_processes(a_pid, atomo_pids, params.n_atom_init, al_pid);
+            break;  // Esce dal ciclo principale
+        }
     }
 
     // Print shared data after simulation time ends
