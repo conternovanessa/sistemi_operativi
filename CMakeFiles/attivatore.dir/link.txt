@@ -1,1 +1,0 @@
-/usr/bin/cc CMakeFiles/attivatore.dir/src/attivatore.c.o CMakeFiles/attivatore.dir/src/process.c.o CMakeFiles/attivatore.dir/src/io.c.o -o attivatore 

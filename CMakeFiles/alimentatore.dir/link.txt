@@ -1,1 +1,0 @@
-/usr/bin/cc CMakeFiles/alimentatore.dir/src/alimentatore.c.o CMakeFiles/alimentatore.dir/src/process.c.o CMakeFiles/alimentatore.dir/src/io.c.o -o alimentatore 
