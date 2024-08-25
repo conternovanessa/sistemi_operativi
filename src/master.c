@@ -26,9 +26,6 @@ void timer_handler(int sig) {
     if (sig == SIGALRM) {
         // Decrease ENERGY_DEMAND by 2
         ENERGY_DEMAND -= 2;
-        if (ENERGY_DEMAND < 0) {
-            ENERGY_DEMAND = 0; // Ensure it doesn't go below 0
-        }
 
         // Synchronize access to shared memory
         sem_wait(sem);
@@ -120,11 +117,12 @@ int main(int argc, char *argv[]) {
     printf("sim duration %d\n", params.sim_duration );
 
     // Wait for simulation duration using a for loop
-    for (int count = 1; count <= params.sim_duration; count++) {
+    int count =1;
+    while ( count <= params.sim_duration) {
         sleep(1);
-        printf("count %d\n", count );
+        printf("sim_duration %d\n", params.sim_duration );
         fflush(stdout);
-
+        params.sim_duration--;
     }
 
     // Print shared data after simulation time ends
@@ -136,8 +134,10 @@ int main(int argc, char *argv[]) {
 
     //printf("Kill all the processes\n");
     // Terminate child processes
-    terminate_processes(a_pid, atomo_pids, params.n_atom_init, al_pid);
-    printf("TIMEOUT \n");
+    if(params.sim_duration == 0){
+        terminate_processes(a_pid, atomo_pids, params.n_atom_init, al_pid);
+        printf("TIMEOUT \n");
+    }
 
     // Wait for child processes to terminate
     int status;
