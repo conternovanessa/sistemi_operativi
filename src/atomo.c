@@ -19,8 +19,6 @@ sem_t *sem;
 pid_t pid_rem;
 
 void cleanup_and_exit(int sig) {
-    //printf("Received signal terminatore for atomo, cleaning up and exiting.\n");
-    fflush(stdout);
     
     // Unmap shared memory
     if (munmap(shm_data, sizeof(shared_data)) == -1) {
@@ -108,32 +106,7 @@ char *argv[]) {
 
     int num_atomico = atoi(argv[1]);
 
-    //printf("Received num_atomico: %d \n", num_atomico);
-    fflush(stdout);
-
-    // Open shared memory
-    int shm_fd = shm_open(SHARED_MEM_NAME, O_RDWR, 0666);
-    if (shm_fd == -1) {
-        perror("shm_open failed");
-        exit(EXIT_FAILURE);
-    }
-
-    // Map shared memory
-    shm_data = mmap(0, sizeof(shared_data), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-    if (shm_data == MAP_FAILED) {
-        perror("mmap failed");
-        exit(EXIT_FAILURE);
-    }
-
-    // Close the shared memory file descriptor as it's no longer needed
-    close(shm_fd);
-
-    // Open semaphore
-    sem = sem_open(SEMAPHORE_NAME, 0);
-    if (sem == SEM_FAILED) {
-        perror("sem_open failed");
-        exit(EXIT_FAILURE);
-    }
+    connect_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
 
     // Setup signal handler for SIGTERM
     struct sigaction sa;

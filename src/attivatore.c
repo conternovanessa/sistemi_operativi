@@ -14,23 +14,6 @@
 shared_data *shm_data;
 sem_t *sem;
 
-void cleanup_and_exit(int sig) {
-    //printf("Received signal Terminate for attivatore, cleaning up and exiting.\n");
-    fflush(stdout);
-    
-    // Unmap shared memory
-    if (munmap(shm_data, sizeof(shared_data)) == -1) {
-        perror("munmap failed");
-    }
-    
-    // Close semaphore
-    if (sem_close(sem) == -1) {
-        perror("sem_close failed");
-    }
-
-    exit(EXIT_SUCCESS);
-}
-
 void send_signal(){
     // Seed the random number generator
     srand(time(NULL));
@@ -55,35 +38,23 @@ void timer_handler(int sig) {
     alarm(2);
 }
 
+// Signal handler for SIGTERM
+void sigterm_handler(int sig) {
+    cleanup(&sem, &shm_data);
+    exit(EXIT_SUCCESS);
+}
+
 int main(int argc, char *argv[]){
 
     const char* filename = "variabili.txt";
     SimulationParameters params = leggiVariabili(filename);
 
     // Open shared memory
-    int shm_fd = shm_open(SHARED_MEM_NAME, O_RDWR, 0666);
-    if (shm_fd == -1) {
-        perror("shm_open failed");
-        exit(EXIT_FAILURE);
-    }
-
-    // Map shared memory
-    shm_data = mmap(0, sizeof(shared_data), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-    if (shm_data == MAP_FAILED) {
-        perror("mmap failed");
-        exit(EXIT_FAILURE);
-    }
-
-    // Open semaphore
-    sem = sem_open(SEMAPHORE_NAME, 0);
-    if (sem == SEM_FAILED) {
-        perror("sem_open failed");
-        exit(EXIT_FAILURE);
-    }
+    connect_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
 
     // Setup signal handler for SIGTERM
     struct sigaction sa2;
-    sa2.sa_handler = cleanup_and_exit;
+    sa2.sa_handler = sigterm_handler;
     sigemptyset(&sa2.sa_mask);
     sa2.sa_flags = 0;
 
@@ -114,9 +85,6 @@ int main(int argc, char *argv[]){
         pause();
     }
 
-    // // Unmap shared memory and close semaphore (unreachable in this example)
-    munmap(shm_data, sizeof(shared_data));
-    sem_close(sem);
-
+    cleanup(&sem, &shm_data);
     exit(EXIT_SUCCESS);
 }
