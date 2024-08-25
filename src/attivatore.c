@@ -72,7 +72,6 @@ int main(int argc, char *argv[]){
         exit(EXIT_FAILURE);
     }
 
-    // Use the create_timer function to create a timer that sends SIGUSR1
     create_timer(SIGALRM, params.step_attivatore, 0, params.step_attivatore, 0, &sem, &shm_data);
 
 
