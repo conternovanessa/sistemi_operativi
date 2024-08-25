@@ -123,6 +123,11 @@ int main(int argc, char *argv[]) {
         printf("sim_duration %d\n", params.sim_duration );
         fflush(stdout);
         params.sim_duration--;
+        if(params.sim_duration == 0){
+            terminate_processes(a_pid, atomo_pids, params.n_atom_init, al_pid);
+            printf("TIMEOUT \n");
+            break;
+        }
         if (shm_data -> free_energy > params.energy_explode_threshold) {
             printf("EXPLODE! \n");
             terminate_processes(a_pid, atomo_pids, params.n_atom_init, al_pid);
@@ -140,14 +145,6 @@ int main(int argc, char *argv[]) {
 
     // Calculate elapsed time for debugging
     time_t end_time = time(NULL);
-    //printf("Simulation ended. Duration: %ld seconds\n", end_time - start_time);
-
-    //printf("Kill all the processes\n");
-    // Terminate child processes
-    if(params.sim_duration == 0){
-        terminate_processes(a_pid, atomo_pids, params.n_atom_init, al_pid);
-        printf("TIMEOUT \n");
-    }
 
     // Wait for child processes to terminate
     int status;
