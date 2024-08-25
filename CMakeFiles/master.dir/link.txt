@@ -1,0 +1,1 @@
+/usr/bin/cc CMakeFiles/master.dir/src/master.c.o CMakeFiles/master.dir/src/io.c.o CMakeFiles/master.dir/src/process.c.o -o master 

@@ -1,0 +1,6 @@
+/home/vconterno/CLionProjects/untitled/CMakeFiles/master.dir
+/home/vconterno/CLionProjects/untitled/CMakeFiles/atomo.dir
+/home/vconterno/CLionProjects/untitled/CMakeFiles/attivatore.dir
+/home/vconterno/CLionProjects/untitled/CMakeFiles/alimentatore.dir
+/home/vconterno/CLionProjects/untitled/CMakeFiles/edit_cache.dir
+/home/vconterno/CLionProjects/untitled/CMakeFiles/rebuild_cache.dir

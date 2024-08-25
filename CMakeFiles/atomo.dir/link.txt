@@ -1,0 +1,1 @@
+/usr/bin/cc CMakeFiles/atomo.dir/src/atomo.c.o CMakeFiles/atomo.dir/src/process.c.o CMakeFiles/atomo.dir/src/io.c.o -o atomo 
