@@ -22,6 +22,33 @@ void printing(int sig) {
     print_shared_data(shm_data);
 }
 
+void kill_all_processes(pid_t al_pid, pid_t a_pid, shared_data* shm_data){
+    // Terminate alimentatore
+    if (kill(al_pid, SIGTERM) == -1) {
+        perror("Error terminating alimentatore");
+    }
+
+    // Terminate attivatore
+    if (kill(a_pid, SIGTERM) == -1) {
+        perror("Error terminating attivatore");
+    }
+    
+    // Terminate atomo processes
+    for (int i = 0; i < shm_data->num_processes; i++) {
+        if (kill(shm_data->pid_array[i], SIGTERM) == -1) {
+            perror("Error terminating atomo");
+        }
+    }    
+
+    // Wait for alimentatore to terminate
+    int status;
+    waitpid(al_pid, &status, 0);
+    waitpid(a_pid, &status, 0);
+    for (int i = 0; i < shm_data->num_processes; i++) {
+        waitpid(shm_data->pid_array[i], &status, 0);
+    }
+}
+
 int main(int argc, char *argv[]) {
     const char* filename = "variabili.txt";
     SimulationParameters params = leggiVariabili(filename);
@@ -77,30 +104,7 @@ int main(int argc, char *argv[]) {
         fflush(stdout);
     }
 
-    // Terminate alimentatore
-    if (kill(al_pid, SIGTERM) == -1) {
-        perror("Error terminating alimentatore");
-    }
-
-    // Terminate attivatore
-    if (kill(a_pid, SIGTERM) == -1) {
-        perror("Error terminating attivatore");
-    }
-    
-    // Terminate atomo processes
-    for (int i = 0; i < shm_data->num_processes; i++) {
-        if (kill(shm_data->pid_array[i], SIGTERM) == -1) {
-            perror("Error terminating atomo");
-        }
-    }    
-
-    // Wait for alimentatore to terminate
-    int status;
-    waitpid(al_pid, &status, 0);
-    waitpid(a_pid, &status, 0);
-    for (int i = 0; i < shm_data->num_processes; i++) {
-        waitpid(shm_data->pid_array[i], &status, 0);
-    }
+    kill_all_processes(al_pid, a_pid, shm_data);
     
     // Cleanup resources
     cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
