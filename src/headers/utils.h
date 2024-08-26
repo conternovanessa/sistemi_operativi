@@ -6,7 +6,7 @@
 
 #define SHARED_MEM_NAME "/shared_mem"
 #define SEMAPHORE_NAME "/semaphore"
-#define MAX_PROCESSES 1000
+#define MAX_PROCESSES 10000
 
 // STRUCT DEFINITIONS
 typedef struct
