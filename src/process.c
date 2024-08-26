@@ -11,7 +11,7 @@
 #include "headers/process.h"
 #include "headers/utils.h"
 
-pid_t create_alimentatore(){
+pid_t create_alimentatore() {
     pid_t al_pid = fork();
     if (al_pid == -1) {
         perror("fork for alimentatore did not go well");
@@ -27,6 +27,7 @@ pid_t create_alimentatore(){
     }
     return al_pid;
 }
+
 pid_t create_attivatore() {
     // Fork attivatore process
     pid_t a_pid = fork();
@@ -51,8 +52,6 @@ pid_t create_atomo(int *max_n_atomico, sem_t *sem, shared_data *shm_data) {
         perror("pipe creation failed");
         exit(EXIT_FAILURE);
     }
-
-    //srand(time(NULL));
 
     // Fork atomo process
     pid_t c_pid = fork();
@@ -93,11 +92,24 @@ pid_t create_atomo(int *max_n_atomico, sem_t *sem, shared_data *shm_data) {
     return c_pid;
 }
 
-void add_pid(pid_t pid, sem_t *sem, shared_data *shm_data){
-    // Parent process: update shared memory
-    sem_wait(sem);
+void add_pid(pid_t pid, sem_t *sem, shared_data *shm_data) {
+    sem_wait(sem);  // Lock semaphore
+
+    printf("Opening semaphore\n");
+    printf("Before realloc: num_processes = %d\n", shm_data->num_processes);
+
+    pid_t* new_array = realloc(shm_data->pid_array, (shm_data->num_processes + 1) * sizeof(pid_t));
+    if (new_array == NULL) {
+        perror("Realloc failed");
+        sem_post(sem);  // Unlock semaphore before returning
+        return;
+    }
+
+    shm_data->pid_array = new_array;
     shm_data->pid_array[shm_data->num_processes++] = pid;
-    sem_post(sem);
+
+    printf("After realloc: num_processes = %d\n", shm_data->num_processes);
+    sem_post(sem);  // Unlock semaphore
 }
 
 void init_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const char* shared_name, shared_data** shm_data) {
@@ -133,7 +145,6 @@ void init_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const c
 }
 
 void connect_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const char* shared_name, shared_data** shm_data) {
-
     // Open shared memory
     int shm_fd = shm_open(shared_name, O_RDWR, 0666);
     if (shm_fd == -1) {
@@ -156,7 +167,6 @@ void connect_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, cons
         perror("sem_open failed");
         exit(EXIT_FAILURE);
     }
-
 }
 
 void cleanup_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const char* shared_name, shared_data** shm_data) {
@@ -181,7 +191,6 @@ void cleanup_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, cons
     }
 }
 
-// Cleanup function
 void cleanup(sem_t** sem, shared_data** shm_data) {
     // Unmap shared memory
     if (*shm_data != MAP_FAILED) {

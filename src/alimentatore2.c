@@ -20,13 +20,15 @@ void sigterm_handler(int sig) {
     exit(EXIT_SUCCESS);
 }
 
-// Handler for the timer using SIGUSR1
+// Handler for the timer using SIGALRM
 void timer_handler(int sig) {
     // Create N_NUOVI_ATOMI processes
-    printf("alimentatore turn\n");
-    for(int i = 0; i < params.n_nuovi_atomi; i++){
-        create_atomo(&params.max_n_atomico, sem, shm_data);
-    }
+    printf("Calling create atomo\n");
+    fflush(stdout);
+    print_line();
+    create_atomo(&params.max_n_atomico, sem, shm_data);
+    printf("Done\n");
+    fflush(stdout);
 }
 
 int main() {
@@ -47,27 +49,27 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    // Set up the signal handler for the timer using SIGUSR1
+    // Set up the signal handler for the timer using SIGALRM
     struct sigaction sa_timer;
     sa_timer.sa_handler = timer_handler;
     sigemptyset(&sa_timer.sa_mask);
     sa_timer.sa_flags = 0;
 
-    if (sigaction(SIGUSR1, &sa_timer, NULL) == -1) {
-        perror("sigaction failed for SIGUSR1");
-       cleanup(&sem, &shm_data);
+    if (sigaction(SIGALRM, &sa_timer, NULL) == -1) {
+        perror("sigaction failed for SIGALRM");
+        cleanup(&sem, &shm_data);
         exit(EXIT_FAILURE);
     }
 
-    // Use the create_timer function to create a timer that sends SIGUSR1
-    create_timer(SIGUSR1, 0, params.step_alimentazione, 0, params.step_alimentazione, &sem, &shm_data);
+    // Use the create_timer function to create a timer that sends SIGALRM
+    create_timer(SIGALRM, 0, params.step_alimentazione, 0, params.step_alimentazione, &sem, &shm_data);
 
-    //waiting for signals
+    // Waiting for signals
     while (1) {
-        pause();  
+        pause();
     }
 
-    // cleanup is added as a safety measure
+    // Cleanup is added as a safety measure
     cleanup(&sem, &shm_data);
     exit(EXIT_SUCCESS);
 }
