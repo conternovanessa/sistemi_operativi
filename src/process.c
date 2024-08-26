@@ -95,7 +95,7 @@ pid_t create_atomo(int *max_n_atomico, sem_t *sem, shared_data *shm_data) {
 void add_pid(pid_t pid, sem_t *sem, shared_data *shm_data) {
     sem_wait(sem);  // Wait for semaphore access
 
-    if (shm_data->num_processes < 100) {
+    if (shm_data->num_processes < MAX_PROCESSES) {
         // Add the new PID to the array
         shm_data->pid_array[shm_data->num_processes++] = pid;
     } else {

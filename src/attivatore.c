@@ -14,15 +14,22 @@
 shared_data *shm_data;
 sem_t *sem;
 
-void send_signal(){
-
+void send_signal() {
     // Seed the random number generator
     srand(time(NULL));
+    
+    pid_t receiver_pid = 0;
+    int random_index = 0;
+    
+    // Keep generating random indices until we find a non-zero PID
+    do {
+        random_index = rand() % shm_data->num_processes;
+        receiver_pid = shm_data->pid_array[random_index];
+    } while (receiver_pid == 0);
 
-    // Select a random index within the range of num_processes
-    int random_index = rand() % shm_data->num_processes;
-    pid_t receiver_pid = shm_data->pid_array[random_index];
-
+    printf("SENDING TO %d\n", receiver_pid);
+    fflush(stdout);
+    
     // Send SIGUSR1 to the randomly selected receiver process
     if (kill(receiver_pid, SIGUSR1) == -1) {
         perror("kill");
@@ -73,7 +80,6 @@ int main(int argc, char *argv[]){
     }
 
     create_timer(SIGALRM, params.step_attivatore, 0, params.step_attivatore, 0, &sem, &shm_data);
-
 
     while(1){
         pause();

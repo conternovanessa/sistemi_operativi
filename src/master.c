@@ -39,8 +39,6 @@ int main(int argc, char *argv[]) {
         create_atomo(&params.max_n_atomico, sem, shm_data);
     }
 
-    printf("First interaction %d", shm_data->num_processes);
-
 
     pid_t al_pid = create_alimentatore();
     if (al_pid == -1) {
@@ -90,18 +88,34 @@ int main(int argc, char *argv[]) {
     }
     
     // Terminate atomo processes
-    for (int i = 0; i < shm_data->num_processes; i++) {
-        if (kill(shm_data->pid_array[i], SIGTERM) == -1) {
-            perror("Error terminating atomo");
+    int termination_counter = 0 ;
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        if (shm_data->pid_array[i] != 0){
+            if (kill(shm_data->pid_array[i], SIGTERM) == -1) {
+                perror("Error terminating atomo");
+            }
+            // printf("Killing: %d\n", shm_data->pid_array[i]);
+            // fflush(stdout);
+            termination_counter++;
         }
+        if (termination_counter == shm_data->num_processes){
+            printf("Termination counter is: %d\n", termination_counter);
+            fflush(stdout);
+            break;
+        } 
     }    
 
     // Wait for alimentatore to terminate
     int status;
+    int warning_counter = 0 ;
     waitpid(al_pid, &status, 0);
     waitpid(a_pid, &status, 0);
     for (int i = 0; i < shm_data->num_processes; i++) {
-        waitpid(shm_data->pid_array[i], &status, 0);
+        if (shm_data->pid_array[i] != 0){
+            waitpid(shm_data->pid_array[i], &status, 0);
+            warning_counter++;
+        }
+        if (warning_counter == shm_data->num_processes) break;
     }
     
     // Cleanup resources
