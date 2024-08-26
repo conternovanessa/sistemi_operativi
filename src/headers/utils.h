@@ -4,6 +4,10 @@
 
 #include <sys/types.h>
 
+#define SHARED_MEM_NAME "/shared_mem"
+#define SEMAPHORE_NAME "/semaphore"
+#define MAX_PROCESSES 1000
+
 // STRUCT DEFINITIONS
 typedef struct
 {
@@ -13,7 +17,7 @@ typedef struct
     int consumata;
     int scorie;
     int num_processes;
-    pid_t pid_array[100];
+    pid_t pid_array[MAX_PROCESSES];
 } shared_data;
 
 typedef struct
@@ -29,19 +33,6 @@ typedef struct
     int energy_explode_threshold;
 } SimulationParameters;
 
-//PROTOTYPE DEFINITION
-
-//Utilities to read files
-SimulationParameters leggiVariabili(const char *filename);
-
-// Process creation and changes
-pid_t create_attivatore();
-pid_t create_atomo(int *num_atomico, char *buffer, sem_t *sem, shared_data *shm_data);
-void add_pid(pid_t pid, sem_t *sem, shared_data *shm_data);
-
-// IO Utilities
-void printSimulationParameters(const SimulationParameters *params);
-void print_shared_data(sem_t *sem, shared_data *shm_data);
-void print_line();
+typedef void (*timer_callback)();
 
 #endif

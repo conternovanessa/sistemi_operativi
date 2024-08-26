@@ -3,3 +3,5 @@
 build/
 old/
 .vscode/
+cmake-build-debug/
+CMakeFiles/
