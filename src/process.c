@@ -139,7 +139,6 @@ void init_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const c
 }
 
 void connect_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const char* shared_name, shared_data** shm_data) {
-
     // Open shared memory
     int shm_fd = shm_open(shared_name, O_RDWR, 0666);
     if (shm_fd == -1) {
@@ -162,7 +161,6 @@ void connect_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, cons
         perror("sem_open failed");
         exit(EXIT_FAILURE);
     }
-
 }
 
 void cleanup_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const char* shared_name, shared_data** shm_data) {
@@ -187,7 +185,6 @@ void cleanup_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, cons
     }
 }
 
-// Cleanup function
 void cleanup(sem_t** sem, shared_data** shm_data) {
     // Unmap shared memory
     if (*shm_data != MAP_FAILED) {
