@@ -16,10 +16,14 @@
 // Global variables for shared memory and semaphore
 shared_data *shm_data;
 sem_t *sem;
+pid_t al_pid;
+pid_t a_pid;
 
 // Signal handler for timer
-void printing(int sig) {
+void print_and_consume(int sig) {
     print_shared_data(shm_data);
+
+    
 }
 
 void kill_all_processes(pid_t al_pid, pid_t a_pid, shared_data* shm_data){
@@ -49,6 +53,13 @@ void kill_all_processes(pid_t al_pid, pid_t a_pid, shared_data* shm_data){
     }
 }
 
+void sigterm_handler(int signum) {
+    printf("Master process received SIGTERM. Cleaning up and exiting.\n");
+    kill_all_processes(al_pid, a_pid, shm_data);
+    cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
+    exit(EXIT_SUCCESS);
+}
+
 int main(int argc, char *argv[]) {
     const char* filename = "variabili.txt";
     SimulationParameters params = leggiVariabili(filename);
@@ -56,11 +67,24 @@ int main(int argc, char *argv[]) {
     printf("PARAMETERS OBTAINED FROM THE FILE: \n");
     printSimulationParameters(&params);
 
+    // Set up sigaction for SIGTERM
+
+    struct sigaction sa_term;
+
+    sa_term.sa_handler = sigterm_handler;
+    sigemptyset(&sa_term.sa_mask);
+    sa_term.sa_flags = 0;
+
+    if (sigaction(SIGALRM, &sa_term, NULL) == -1) {
+        perror("sigaction failed");
+        cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
+        exit(EXIT_FAILURE);
+    }
+
     // Initialize shared memory and semaphore
     init_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
     srand(time(NULL));
 
-    shm_data->num_processes = 0;
 
     for(int i = 0; i < params.n_atom_init; i++){
         create_atomo(&params.max_n_atomico, sem, shm_data);
@@ -83,9 +107,8 @@ int main(int argc, char *argv[]) {
 
 
     struct sigaction sa;
-
-    // Set up the signal handler for printing shared data
-    sa.sa_handler = printing;
+    // Set up the signal handler for print_and_consume shared data
+    sa.sa_handler = print_and_consume;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = 0;
 
