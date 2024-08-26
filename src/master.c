@@ -88,34 +88,18 @@ int main(int argc, char *argv[]) {
     }
     
     // Terminate atomo processes
-    int termination_counter = 0 ;
-    for (int i = 0; i < MAX_PROCESSES; i++) {
-        if (shm_data->pid_array[i] != 0){
-            if (kill(shm_data->pid_array[i], SIGTERM) == -1) {
-                perror("Error terminating atomo");
-            }
-            // printf("Killing: %d\n", shm_data->pid_array[i]);
-            // fflush(stdout);
-            termination_counter++;
+    for (int i = 0; i < shm_data->num_processes; i++) {
+        if (kill(shm_data->pid_array[i], SIGTERM) == -1) {
+            perror("Error terminating atomo");
         }
-        if (termination_counter == shm_data->num_processes){
-            printf("Termination counter is: %d\n", termination_counter);
-            fflush(stdout);
-            break;
-        } 
     }    
 
     // Wait for alimentatore to terminate
     int status;
-    int warning_counter = 0 ;
     waitpid(al_pid, &status, 0);
     waitpid(a_pid, &status, 0);
     for (int i = 0; i < shm_data->num_processes; i++) {
-        if (shm_data->pid_array[i] != 0){
-            waitpid(shm_data->pid_array[i], &status, 0);
-            warning_counter++;
-        }
-        if (warning_counter == shm_data->num_processes) break;
+        waitpid(shm_data->pid_array[i], &status, 0);
     }
     
     // Cleanup resources

@@ -68,10 +68,9 @@ void scissione(int *num_atomico) {
 
         *num_atomico -= new_atomico;
 
-        sem_wait(sem);
         add_pid(c_pid, sem, shm_data);
         shm_data->free_energy += (*num_atomico * new_atomico - MAX(*num_atomico, new_atomico));
-        sem_post(sem);
+        shm_data->scissioni++;
     }
 }
 
@@ -101,8 +100,10 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    // Block SIGUSR1 and set up signal handling
     sigset_t set;
+    siginfo_t info;
+
+    // Block SIGUSR1 and set up signal handling
     sigemptyset(&set);
     sigaddset(&set, SIGUSR1);
     if (sigprocmask(SIG_BLOCK, &set, NULL) == -1) {
@@ -110,28 +111,25 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    while (1) {
-        siginfo_t info;
+    while(1) {
+
+        // Wait for the signal
         if (sigwaitinfo(&set, &info) == -1) {
             perror("sigwaitinfo");
             exit(EXIT_FAILURE);
         }
 
         if (info.si_signo == SIGUSR1) {
-            printf("RECEIVED SIGUSR1\n");
-            fflush(stdout);
-            sem_wait(sem);
-            shm_data->attivazioni++;
-            sem_post(sem);
 
             if (num_atomico <= params.min_n_atomico) {
                 sem_wait(sem);
                 shm_data->scorie++;
                 pid_t pid_rem = getpid();
-                for (int i = 0; i < MAX_PROCESSES; i++) {
+                for (int i = 0; i < shm_data->num_processes; i++) {
                     if (shm_data->pid_array[i] == pid_rem) {
-                        shm_data->pid_array[i] = 0;  // Set the PID to zero
                         shm_data->num_processes--;
+                        shm_data->pid_array[i] = shm_data->pid_array[shm_data->num_processes];  
+                        shm_data->pid_array[shm_data->num_processes] = 0;
                         break;
                     }
                 }
@@ -139,12 +137,9 @@ int main(int argc, char *argv[]) {
                 kill(getpid(), SIGTERM);
             } else {
                 scissione(&num_atomico);
-                printf("scissione!");
-                sem_wait(sem);
-                shm_data->scissioni++;
-                sem_post(sem);
             }
         }
+        pause();
     }
 
 

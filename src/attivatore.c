@@ -21,14 +21,12 @@ void send_signal() {
     pid_t receiver_pid = 0;
     int random_index = 0;
     
-    // Keep generating random indices until we find a non-zero PID
-    do {
-        random_index = rand() % shm_data->num_processes;
-        receiver_pid = shm_data->pid_array[random_index];
-    } while (receiver_pid == 0);
-
-    printf("SENDING TO %d\n", receiver_pid);
-    fflush(stdout);
+    random_index = rand() % shm_data->num_processes;
+    receiver_pid = shm_data->pid_array[random_index];
+    
+    sem_wait(sem);
+    shm_data->attivazioni++;
+    sem_post(sem);
     
     // Send SIGUSR1 to the randomly selected receiver process
     if (kill(receiver_pid, SIGUSR1) == -1) {
