@@ -101,8 +101,10 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    // Block SIGUSR1 and set up signal handling
     sigset_t set;
+    siginfo_t info;
+
+    // Block SIGUSR1 and set up signal handling
     sigemptyset(&set);
     sigaddset(&set, SIGUSR1);
     if (sigprocmask(SIG_BLOCK, &set, NULL) == -1) {
@@ -110,19 +112,22 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    while (1) {
-        siginfo_t info;
+    while(1) {
+
+
+        // Wait for the signal
         if (sigwaitinfo(&set, &info) == -1) {
             perror("sigwaitinfo");
             exit(EXIT_FAILURE);
         }
 
         if (info.si_signo == SIGUSR1) {
-            printf("RECEIVED SIGUSR1\n");
+            printf("MI attivo!\n");
             fflush(stdout);
             sem_wait(sem);
             shm_data->attivazioni++;
             sem_post(sem);
+            
 
             if (num_atomico <= params.min_n_atomico) {
                 sem_wait(sem);
@@ -136,15 +141,18 @@ int main(int argc, char *argv[]) {
                     }
                 }
                 sem_post(sem);
+                printf("killo il processo scoria\n");
                 kill(getpid(), SIGTERM);
+                printf("io non devo esserci \n");
             } else {
                 scissione(&num_atomico);
-                printf("scissione!");
                 sem_wait(sem);
                 shm_data->scissioni++;
                 sem_post(sem);
+
             }
         }
+        pause();
     }
 
 
