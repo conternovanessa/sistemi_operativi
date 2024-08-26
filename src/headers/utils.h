@@ -16,7 +16,7 @@ typedef struct
     int consumata;
     int scorie;
     int num_processes;
-    pid_t *pid_array;
+    pid_t pid_array[100];
 } shared_data;
 
 typedef struct

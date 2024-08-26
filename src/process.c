@@ -93,23 +93,17 @@ pid_t create_atomo(int *max_n_atomico, sem_t *sem, shared_data *shm_data) {
 }
 
 void add_pid(pid_t pid, sem_t *sem, shared_data *shm_data) {
-    sem_wait(sem);  // Lock semaphore
+    sem_wait(sem);  // Wait for semaphore access
 
-    printf("Opening semaphore\n");
-    printf("Before realloc: num_processes = %d\n", shm_data->num_processes);
-
-    pid_t* new_array = realloc(shm_data->pid_array, (shm_data->num_processes + 1) * sizeof(pid_t));
-    if (new_array == NULL) {
-        perror("Realloc failed");
-        sem_post(sem);  // Unlock semaphore before returning
-        return;
+    if (shm_data->num_processes < 100) {
+        // Add the new PID to the array
+        shm_data->pid_array[shm_data->num_processes++] = pid;
+    } else {
+        // Handle the case where the array is full
+        fprintf(stderr, "Error: PID array is full. Cannot add more PIDs.\n");
     }
 
-    shm_data->pid_array = new_array;
-    shm_data->pid_array[shm_data->num_processes++] = pid;
-
-    printf("After realloc: num_processes = %d\n", shm_data->num_processes);
-    sem_post(sem);  // Unlock semaphore
+    sem_post(sem);  // Release semaphore access
 }
 
 void init_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const char* shared_name, shared_data** shm_data) {

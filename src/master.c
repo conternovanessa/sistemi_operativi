@@ -34,7 +34,12 @@ int main(int argc, char *argv[]) {
     srand(time(NULL));
 
     shm_data->num_processes = 0;
-    shm_data->pid_array = NULL;
+
+    for(int i = 0; i < params.n_atom_init; i++){
+        create_atomo(&params.max_n_atomico, sem, shm_data);
+    }
+
+    printf("First interaction %d", shm_data->num_processes);
 
 
     pid_t al_pid = create_alimentatore();
@@ -80,14 +85,25 @@ int main(int argc, char *argv[]) {
     }
 
     // Terminate attivatore
-    if (kill(al_pid, SIGTERM) == -1) {
+    if (kill(a_pid, SIGTERM) == -1) {
         perror("Error terminating attivatore");
     }
+    
+    // Terminate atomo processes
+    for (int i = 0; i < shm_data->num_processes; i++) {
+        if (kill(shm_data->pid_array[i], SIGTERM) == -1) {
+            perror("Error terminating atomo");
+        }
+    }    
 
     // Wait for alimentatore to terminate
     int status;
     waitpid(al_pid, &status, 0);
-
+    waitpid(a_pid, &status, 0);
+    for (int i = 0; i < shm_data->num_processes; i++) {
+        waitpid(shm_data->pid_array[i], &status, 0);
+    }
+    
     // Cleanup resources
     cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
     exit(EXIT_SUCCESS);
