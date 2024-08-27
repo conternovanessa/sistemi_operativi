@@ -5,9 +5,6 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <semaphore.h>
-#include <sys/wait.h>
-#include <time.h>
-#include <string.h>
 
 #include "headers/utils.h"
 #include "headers/io.h"
@@ -138,10 +135,6 @@ int main(int argc, char *argv[])
 
         if (info.si_signo == SIGUSR1)
         {
-            char msg[256];
-            snprintf(msg, sizeof(msg), "Received SIGUSR1 to %d\n", getpid());
-            write(STDOUT_FILENO, msg, strlen(msg)); // Safe alternative to printf in signal handler
-
 
             if (num_atomico <= params.min_n_atomico)
             {
@@ -162,7 +155,7 @@ int main(int argc, char *argv[])
                 }
                 sem_post(sem);
 
-                kill(pid_rem, SIGTERM); // It's better to use pid_rem instead of getpid()
+                kill(pid_rem, SIGTERM);
             }
             else
             {
