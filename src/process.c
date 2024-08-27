@@ -139,29 +139,30 @@ void init_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const c
 }
 
 void connect_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const char* shared_name, shared_data** shm_data) {
-    // Open shared memory
     int shm_fd = shm_open(shared_name, O_RDWR, 0666);
     if (shm_fd == -1) {
         perror("shm_open failed");
         exit(EXIT_FAILURE);
     }
 
-    // Map shared memory
     *shm_data = mmap(0, sizeof(shared_data), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
     if (*shm_data == MAP_FAILED) {
         perror("mmap failed");
+        close(shm_fd);  // Clean up the file descriptor before exiting
         exit(EXIT_FAILURE);
     }
 
-    close(shm_fd);
+    close(shm_fd);  // Now safe to close the file descriptor
 
-    // Open semaphore
     *sem = sem_open(sem_name, 0);
     if (*sem == SEM_FAILED) {
         perror("sem_open failed");
+        munmap(*shm_data, sizeof(shared_data));  // Unmap shared memory before exiting
         exit(EXIT_FAILURE);
     }
 }
+
+
 
 void cleanup_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const char* shared_name, shared_data** shm_data) {
     // Unmap shared memory
