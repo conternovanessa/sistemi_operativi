@@ -7,7 +7,6 @@
 #include <sys/wait.h>
 #include <semaphore.h>
 #include <time.h>
-#include <string.h>
 
 #include "headers/utils.h"
 #include "headers/process.h"
@@ -33,13 +32,12 @@ void send_signal() {
         shm_data->attivazioni++;
         sem_post(sem);
 
-        printf("Sending to %d\n", receiver_pid);
-        fflush(stdout);
-
         if (kill(receiver_pid, SIGUSR1) == -1) {
             perror("kill");
             exit(EXIT_FAILURE);
         }
+
+        usleep(1);
     }
     sem_post(sem);
 }
