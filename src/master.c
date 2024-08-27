@@ -19,14 +19,19 @@ sem_t *sem;
 pid_t al_pid;
 pid_t a_pid;
 pid_t master_pid;
-int ENERGY_DEMAND;
+SimulationParameters params;
 
 // Signal handler for timer
 void print_and_consume(int sig) {
     print_shared_data(shm_data);
 
-    if (shm_data->scissioni >= 1 && ENERGY_DEMAND >= shm_data->free_energy){
+    if (shm_data->scissioni >= 1 && params.energy_demand >= shm_data->free_energy){
         printf("BLACKOUT!\n");
+        kill(master_pid, SIGTERM);
+    }
+
+    if (shm_data->free_energy >= params.energy_explode_threshold){
+        printf("EXPLODE!\n");
         kill(master_pid, SIGTERM);
     }
 
@@ -60,7 +65,6 @@ void kill_all_processes(pid_t al_pid, pid_t a_pid, shared_data* shm_data){
 }
 
 void sigterm_handler(int signum) {
-    printf("Master process received SIGTERM. Cleaning up and exiting.\n");
     kill_all_processes(al_pid, a_pid, shm_data);
     cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
     exit(EXIT_SUCCESS);
@@ -71,13 +75,10 @@ int main(int argc, char *argv[]) {
     master_pid = getpid();
 
     const char* filename = "variabili.txt";
-    SimulationParameters params = leggiVariabili(filename);
+    params = leggiVariabili(filename);
     print_line();
     printf("PARAMETERS OBTAINED FROM THE FILE: \n");
     printSimulationParameters(&params);
-
-    ENERGY_DEMAND = params.energy_demand;
-
     // Set up sigaction for SIGTERM
 
     struct sigaction sa_term;
@@ -100,8 +101,6 @@ int main(int argc, char *argv[]) {
     for(int i = 0; i < params.n_atom_init; i++){
         create_atomo(&params.max_n_atomico, sem, shm_data);
     }
-
-    print_shared_data(shm_data);
 
 
     pid_t al_pid = create_alimentatore();
@@ -139,6 +138,8 @@ int main(int argc, char *argv[]) {
         printf("count %d\n", count);
         fflush(stdout);
     }
+
+    printf("TIMEOUT!\n");
 
     kill_all_processes(al_pid, a_pid, shm_data);
     
