@@ -18,12 +18,18 @@ shared_data *shm_data;
 sem_t *sem;
 pid_t al_pid;
 pid_t a_pid;
+pid_t master_pid;
+int ENERGY_DEMAND;
 
 // Signal handler for timer
 void print_and_consume(int sig) {
     print_shared_data(shm_data);
 
-    
+    if (shm_data->scissioni >= 1 && ENERGY_DEMAND >= shm_data->free_energy){
+        printf("BLACKOUT!\n");
+        kill(master_pid, SIGTERM);
+    }
+
 }
 
 void kill_all_processes(pid_t al_pid, pid_t a_pid, shared_data* shm_data){
@@ -61,11 +67,16 @@ void sigterm_handler(int signum) {
 }
 
 int main(int argc, char *argv[]) {
+
+    master_pid = getpid();
+
     const char* filename = "variabili.txt";
     SimulationParameters params = leggiVariabili(filename);
     print_line();
     printf("PARAMETERS OBTAINED FROM THE FILE: \n");
     printSimulationParameters(&params);
+
+    ENERGY_DEMAND = params.energy_demand;
 
     // Set up sigaction for SIGTERM
 
@@ -89,6 +100,8 @@ int main(int argc, char *argv[]) {
     for(int i = 0; i < params.n_atom_init; i++){
         create_atomo(&params.max_n_atomico, sem, shm_data);
     }
+
+    print_shared_data(shm_data);
 
 
     pid_t al_pid = create_alimentatore();
