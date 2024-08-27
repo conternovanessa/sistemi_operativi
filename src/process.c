@@ -11,10 +11,11 @@
 #include "headers/process.h"
 #include "headers/utils.h"
 
-pid_t create_alimentatore() {
+pid_t create_alimentatore(shared_data *shm_data) {
     pid_t al_pid = fork();
     if (al_pid == -1) {
-        perror("fork for alimentatore did not go well");
+        printf(" create_alimentatore : MELTDOWN ! \n");
+        kill(shm_data -> master_pid, SIGTERM);
         exit(EXIT_FAILURE);
     }
     if (al_pid == 0) {
@@ -28,11 +29,12 @@ pid_t create_alimentatore() {
     return al_pid;
 }
 
-pid_t create_attivatore() {
+pid_t create_attivatore(shared_data *shm_data) {
     // Fork attivatore process
     pid_t a_pid = fork();
     if (a_pid == -1) {
-        perror("fork for attivatore did not go well");
+        printf("create_attivatore : MELTDOWN ! \n");
+        kill(shm_data -> master_pid, SIGTERM);
         exit(EXIT_FAILURE);
     }
     if (a_pid == 0) {
@@ -56,7 +58,8 @@ pid_t create_atomo(int *max_n_atomico, sem_t *sem, shared_data *shm_data) {
     // Fork atomo process
     pid_t c_pid = fork();
     if (c_pid == -1) {
-        perror("fork to create atomo did not go well");
+        printf("create_atomo : MELTDOWN ! \n");
+        kill(shm_data -> master_pid, SIGTERM);
         exit(EXIT_FAILURE);
     }
     if (c_pid == 0) {

@@ -97,22 +97,28 @@ int main(int argc, char *argv[]) {
     init_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
     srand(time(NULL));
 
+    sem_wait(sem);
+    shm_data->master_pid = master_pid;
+    sem_post(sem);
+
 
     for(int i = 0; i < params.n_atom_init; i++){
         create_atomo(&params.max_n_atomico, sem, shm_data);
     }
 
 
-    pid_t al_pid = create_alimentatore();
+    pid_t al_pid = create_alimentatore(shm_data);
     if (al_pid == -1) {
-        perror("Failed to create alimentatore");
+        printf(" master_alimentatore : MELTDOWN ! \n");
+        kill(shm_data -> master_pid, SIGTERM);
         cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
         exit(EXIT_FAILURE);
     }
 
-    pid_t a_pid = create_attivatore();
+    pid_t a_pid = create_attivatore(shm_data);
     if (a_pid == -1) {
-        perror("Failed to create alimentatore");
+        printf("master_attivatore : MELTDOWN ! \n");
+        kill(shm_data -> master_pid, SIGTERM);
         cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
         exit(EXIT_FAILURE);
     }
