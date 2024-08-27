@@ -24,7 +24,8 @@ SimulationParameters params;
 // Signal handler for timer
 void print_and_consume(int sig) {
     print_shared_data(shm_data);
-
+    shm_data-> free_energy -= params.energy_demand;
+    shm_data -> consumata += params.energy_demand;
     if (shm_data->scissioni >= 1 && params.energy_demand >= shm_data->free_energy){
         printf("BLACKOUT!\n");
         kill(master_pid, SIGTERM);
