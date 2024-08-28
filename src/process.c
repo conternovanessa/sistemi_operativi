@@ -35,7 +35,7 @@ pid_t create_attivatore(shared_data *shm_data) {
     pid_t a_pid = fork();
     if (a_pid == -1) {
         perror ("fork failed for create_attivatore");
-        printf("MELTDOWN!");
+        printf("MELTDOWN!\n");
         kill(shm_data->master_pid, SIGTERM);
         exit(EXIT_FAILURE);
     }
@@ -60,8 +60,8 @@ pid_t create_atomo(int *max_n_atomico, sem_t *sem, shared_data *shm_data) {
     // Fork atomo process
     pid_t c_pid = fork();
     if (c_pid == -1) {
-        perror("fork failed di create atomo");
-        printf("MELTDOWN!");
+        // perror("fork failed di create atomo");
+        printf("MELTDOWN!\n");
         kill(shm_data->master_pid, SIGTERM);
         exit(EXIT_FAILURE);
     }
@@ -106,7 +106,6 @@ void add_pid(pid_t pid, sem_t *sem, shared_data *shm_data) {
         shm_data->pid_array[shm_data->num_processes++] = pid;
         sem_post(sem);  // Release semaphore access
     } else {
-        usleep(10000);
         // Handle the case where the array is full
         fprintf(stderr, "Error: PID array is full. Cannot add more PIDs.\n");
         fprintf(stderr, "MEMORY FULL!\n");
