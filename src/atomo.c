@@ -35,6 +35,8 @@ void scissione(int *num_atomico){
     pid_t c_pid = fork();
     if (c_pid == -1){
         perror("fork failed for atomo.c");
+        printf("MELTDOWN!");
+        kill(shm_data->master_pid, SIGTERM);
         exit(EXIT_FAILURE);
     }
     if (c_pid == 0){

@@ -11,10 +11,12 @@
 #include "headers/process.h"
 #include "headers/utils.h"
 
-pid_t create_alimentatore() {
+pid_t create_alimentatore(shared_data *shm_data) {
     pid_t al_pid = fork();
     if (al_pid == -1) {
         perror("fork failed for create_alimentatore");
+        printf("MELTDOWN!");
+        kill(shm_data->master_pid, SIGTERM);
         exit(EXIT_FAILURE);
     }
     if (al_pid == 0) {
@@ -28,11 +30,13 @@ pid_t create_alimentatore() {
     return al_pid;
 }
 
-pid_t create_attivatore() {
+pid_t create_attivatore(shared_data *shm_data) {
     // Fork attivatore process
     pid_t a_pid = fork();
     if (a_pid == -1) {
         perror ("fork failed for create_attivatore");
+        printf("MELTDOWN!");
+        kill(shm_data->master_pid, SIGTERM);
         exit(EXIT_FAILURE);
     }
     if (a_pid == 0) {
@@ -57,6 +61,8 @@ pid_t create_atomo(int *max_n_atomico, sem_t *sem, shared_data *shm_data) {
     pid_t c_pid = fork();
     if (c_pid == -1) {
         perror("fork failed di create atomo");
+        printf("MELTDOWN!");
+        kill(shm_data->master_pid, SIGTERM);
         exit(EXIT_FAILURE);
     }
     if (c_pid == 0) {
@@ -100,9 +106,11 @@ void add_pid(pid_t pid, sem_t *sem, shared_data *shm_data) {
         shm_data->pid_array[shm_data->num_processes++] = pid;
         sem_post(sem);  // Release semaphore access
     } else {
+        usleep(10000);
         // Handle the case where the array is full
         fprintf(stderr, "Error: PID array is full. Cannot add more PIDs.\n");
-        fprintf(stderr, "MEMORY FULL!");
+        fprintf(stderr, "MEMORY FULL!\n");
+        
         kill(shm_data->master_pid, SIGTERM);
     }
 }

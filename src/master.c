@@ -8,9 +8,12 @@
 #include <sys/mman.h>
 #include <semaphore.h>
 #include <time.h>
+#include <errno.h>
+
 #include "headers/utils.h"
 #include "headers/io.h"
 #include "headers/process.h"
+
 // Global variables for shared memory and semaphore
 shared_data *shm_data;
 sem_t *sem;
@@ -21,13 +24,13 @@ SimulationParameters params;
 // Signal handler for timer
 void print_and_consume(int sig) {
     
+    print_shared_data(shm_data);
+
+
     sem_wait(sem);
     shm_data -> free_energy -= params.energy_demand;
     shm_data -> consumata += params.energy_demand;
     sem_post(sem);
-
-    print_shared_data(shm_data);
-    
 
     if (shm_data->scissioni >= 1 && params.energy_demand >= shm_data->free_energy) {
         printf("BLACKOUT!\n");
@@ -40,31 +43,51 @@ void print_and_consume(int sig) {
     }
 }
 
-    void kill_all_processes(pid_t al_pid, pid_t a_pid, shared_data *shm_data) {
-        // Terminate alimentatore
-        if (kill(al_pid, SIGTERM) == -1) {
-            perror("Error terminating alimentatore");
+    int safe_terminate_process(pid_t pid) {
+    if (kill(pid, 0) == 0) {
+        // Process exists, try to terminate it
+        if (kill(pid, SIGTERM) == 0) {
+            return 0;
+        } else {
+            perror("Error sending SIGTERM");
+            return -1;
         }
-        // Terminate attivatore
-        if (kill(a_pid, SIGTERM) == -1) {
-            perror("Error terminating attivatore");
-        }
-
-        // Terminate atomo processes
-        for (int i = 0; i < shm_data->num_processes; i++) {
-            if (kill(shm_data->pid_array[i], SIGTERM) == -1) {
-                perror("Error terminating atomo");
-            }
-        }
-
-        // Wait for alimentatore to terminate
-        int status;
-        waitpid(al_pid, &status, 0);
-        waitpid(a_pid, &status, 0);
-        for (int i = 0; i < shm_data->num_processes; i++) {
-            waitpid(shm_data->pid_array[i], &status, 0);
+    } else {
+        if (errno == ESRCH) {
+            return 0;  // Not an error, process is already gone
+        } else {
+            perror("Error checking process existence");
+            return -1;
         }
     }
+}
+
+void kill_all_processes(pid_t al_pid, pid_t a_pid, shared_data *shm_data) {
+    // Terminate alimentatore
+    if (safe_terminate_process(al_pid) == -1) {
+        fprintf(stderr, "Error terminating alimentatore\n");
+    }
+    
+    // Terminate attivatore
+    if (safe_terminate_process(a_pid) == -1) {
+        fprintf(stderr, "Error terminating attivatore\n");
+    }
+
+    // Terminate atomo processes
+    for (int i = 0; i < shm_data->num_processes; i++) {
+        if (safe_terminate_process(shm_data->pid_array[i]) == -1) {
+            fprintf(stderr, "Error terminating atomo %d\n", i);
+        }
+    }
+
+    // Wait for all processes to terminate
+    int status;
+    waitpid(al_pid, &status, 0);
+    waitpid(a_pid, &status, 0);
+    for (int i = 0; i < shm_data->num_processes; i++) {
+        waitpid(shm_data->pid_array[i], &status, 0);
+    }
+}
 
     void sigterm_handler(int signum) {
         printf("Master process received SIGTERM. Cleaning up and exiting.\n");
@@ -93,13 +116,13 @@ void print_and_consume(int sig) {
             create_atomo(&params.max_n_atomico, sem, shm_data);
         }
 
-        pid_t al_pid = create_alimentatore();
+        pid_t al_pid = create_alimentatore(shm_data);
         if (al_pid == -1) {
             perror("Failed to create alimentatore");
             cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
             exit(EXIT_FAILURE);
         }
-        pid_t a_pid = create_attivatore();
+        pid_t a_pid = create_attivatore(shm_data);
         if (a_pid == -1) {
             perror("Failed to create alimentatore");
             cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
