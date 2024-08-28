@@ -16,24 +16,28 @@ shared_data *shm_data;
 sem_t *sem;
 pid_t al_pid;
 pid_t a_pid;
-pid_t master_pid;
-int ENERGY_DEMAND;
 SimulationParameters params;
 
 // Signal handler for timer
 void print_and_consume(int sig) {
+    
+    sem_wait(sem);
+    shm_data -> free_energy -= params.energy_demand;
+    shm_data -> consumata += params.energy_demand;
+    sem_post(sem);
+
     print_shared_data(shm_data);
+    
 
-
-    /*if (shm_data->scissioni >= 1 && params.energy_demand >= shm_data->free_energy) {
+    if (shm_data->scissioni >= 1 && params.energy_demand >= shm_data->free_energy) {
         printf("BLACKOUT!\n");
-        kill(master_pid, SIGTERM);
+        kill(shm_data->master_pid, SIGTERM);
     }
 
     if (shm_data->free_energy >= params.energy_explode_threshold) {
         printf("EXPLODE!\n");
-        kill(master_pid, SIGTERM);
-    }*/
+        kill(shm_data->master_pid, SIGTERM);
+    }
 }
 
     void kill_all_processes(pid_t al_pid, pid_t a_pid, shared_data *shm_data) {
@@ -52,6 +56,7 @@ void print_and_consume(int sig) {
                 perror("Error terminating atomo");
             }
         }
+
         // Wait for alimentatore to terminate
         int status;
         waitpid(al_pid, &status, 0);
@@ -67,28 +72,26 @@ void print_and_consume(int sig) {
         cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
         exit(EXIT_SUCCESS);
     }
+
     int main(int argc, char *argv[]) {
-        master_pid = getpid();
+
+        pid_t master_pid = getpid();
 
         const char *filename = "variabili.txt";
-        SimulationParameters params = leggiVariabili(filename);
+        params = leggiVariabili(filename);
         params = leggiVariabili(filename);
         print_line();
         printf("PARAMETERS OBTAINED FROM THE FILE: \n");
         printSimulationParameters(&params);
 
-        ENERGY_DEMAND = params.energy_demand;
-
-
         // Initialize shared memory and semaphore
         init_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
+        shm_data -> master_pid = master_pid;
         srand(time(NULL));
+
         for (int i = 0; i < params.n_atom_init; i++) {
             create_atomo(&params.max_n_atomico, sem, shm_data);
         }
-
-        print_shared_data(shm_data);
-
 
         pid_t al_pid = create_alimentatore();
         if (al_pid == -1) {
@@ -113,6 +116,7 @@ void print_and_consume(int sig) {
             cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
             exit(EXIT_FAILURE);
         }
+
         struct sigaction sa;
         // Set up the signal handler for print_and_consume shared data
         sa.sa_handler = print_and_consume;
@@ -132,11 +136,8 @@ void print_and_consume(int sig) {
         }
 
         printf("TIMEOUT!\n");
+        kill(shm_data->master_pid, SIGTERM);
 
-        kill_all_processes(al_pid, a_pid, shm_data);
-
-        // Cleanup resources
-        cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
         exit(EXIT_SUCCESS);
     }
 

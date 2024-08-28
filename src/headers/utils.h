@@ -18,6 +18,7 @@ typedef struct
     int scorie;
     int num_processes;
     pid_t pid_array[MAX_PROCESSES];
+    pid_t master_pid;
 } shared_data;
 
 typedef struct
