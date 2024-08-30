@@ -92,7 +92,6 @@ void kill_all_processes(pid_t al_pid, pid_t a_pid, shared_data *shm_data) {
 }
 
     void sigterm_handler(int signum) {
-        printf("Master process received SIGTERM. Cleaning up and exiting.\n");
         kill_all_processes(al_pid, a_pid, shm_data);
         cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
         exit(EXIT_SUCCESS);
