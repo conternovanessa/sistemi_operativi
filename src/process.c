@@ -11,11 +11,32 @@
 #include "headers/process.h"
 #include "headers/utils.h"
 
-pid_t create_attivatore() {
+pid_t create_alimentatore(shared_data *shm_data) {
+    pid_t al_pid = fork();
+    if (al_pid == -1) {
+        perror("fork failed for create_alimentatore");
+        printf("MELTDOWN!");
+        kill(shm_data->master_pid, SIGTERM);
+        exit(EXIT_FAILURE);
+    }
+    if (al_pid == 0) {
+        // Child process: alimentatore
+        char *alimentatore_args[] = {"alimentatore", NULL};
+        if (execve("./alimentatore", alimentatore_args, NULL) == -1) {
+            perror("execve failed for alimentatore");
+            exit(EXIT_FAILURE);
+        }
+    }
+    return al_pid;
+}
+
+pid_t create_attivatore(shared_data *shm_data) {
     // Fork attivatore process
     pid_t a_pid = fork();
     if (a_pid == -1) {
-        perror("fork for attivatore did not go well");
+        perror ("fork failed for create_attivatore");
+        printf("MELTDOWN!\n");
+        kill(shm_data->master_pid, SIGTERM);
         exit(EXIT_FAILURE);
     }
     if (a_pid == 0) {
@@ -36,12 +57,12 @@ pid_t create_atomo(int *max_n_atomico, sem_t *sem, shared_data *shm_data) {
         exit(EXIT_FAILURE);
     }
 
-    srand(time(NULL));
-
     // Fork atomo process
     pid_t c_pid = fork();
     if (c_pid == -1) {
-        perror("fork to create atomo did not go well");
+        // perror("fork failed di create atomo");
+        printf("MELTDOWN!\n");
+        kill(shm_data->master_pid, SIGTERM);
         exit(EXIT_FAILURE);
     }
     if (c_pid == 0) {
@@ -96,11 +117,20 @@ pid_t create_alimentatore() {
 }
 
 
-void add_pid(pid_t pid, sem_t *sem, shared_data *shm_data){
-    // Parent process: update shared memory
-    sem_wait(sem);
-    shm_data->pid_array[shm_data->num_processes++] = pid;
-    sem_post(sem);
+void add_pid(pid_t pid, sem_t *sem, shared_data *shm_data) {
+
+    if (shm_data->num_processes < MAX_PROCESSES) {
+        // Add the new PID to the array
+        sem_wait(sem);  // Wait for semaphore access
+        shm_data->pid_array[shm_data->num_processes++] = pid;
+        sem_post(sem);  // Release semaphore access
+    } else {
+        // Handle the case where the array is full
+        fprintf(stderr, "Error: PID array is full. Cannot add more PIDs.\n");
+        fprintf(stderr, "MEMORY FULL!\n");
+        
+        kill(shm_data->master_pid, SIGTERM);
+    }
 }
 
 void init_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const char* shared_name, shared_data** shm_data) {
@@ -135,6 +165,32 @@ void init_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const c
     }
 }
 
+void connect_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const char* shared_name, shared_data** shm_data) {
+    int shm_fd = shm_open(shared_name, O_RDWR, 0666);
+    if (shm_fd == -1) {
+        perror("shm_open failed");
+        exit(EXIT_FAILURE);
+    }
+
+    *shm_data = mmap(0, sizeof(shared_data), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    if (*shm_data == MAP_FAILED) {
+        perror("mmap failed");
+        close(shm_fd);  // Clean up the file descriptor before exiting
+        exit(EXIT_FAILURE);
+    }
+
+    close(shm_fd);  // Now safe to close the file descriptor
+
+    *sem = sem_open(sem_name, 0);
+    if (*sem == SEM_FAILED) {
+        perror("sem_open failed");
+        munmap(*shm_data, sizeof(shared_data));  // Unmap shared memory before exiting
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+
 void cleanup_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const char* shared_name, shared_data** shm_data) {
     // Unmap shared memory
     if (munmap(*shm_data, sizeof(shared_data)) == -1) {
@@ -157,24 +213,40 @@ void cleanup_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, cons
     }
 }
 
-void create_timer(timer_callback callback, int tv_sec, int tv_nsec, int interval_tv_sec, int interval_tv_nsec){
+void cleanup(sem_t** sem, shared_data** shm_data) {
+    // Unmap shared memory
+    if (*shm_data != MAP_FAILED) {
+        munmap(*shm_data, sizeof(shared_data));
+    }
+
+    // Close semaphore
+    if (*sem != SEM_FAILED) {
+        sem_close(*sem);
+    }
+}
+
+void create_timer(int signo, int tv_sec, int tv_nsec, int interval_tv_sec, int interval_tv_nsec, sem_t** sem, shared_data** shm_data) {
     struct sigevent sev;
     struct itimerspec its;
     timer_t timerid;
 
     // Set up the signal event
-    sev.sigev_notify = SIGEV_THREAD;
+    sev.sigev_notify = SIGEV_SIGNAL;
+    sev.sigev_signo = signo;          
+    sev.sigev_notify = SIGEV_SIGNAL;
+    sev.sigev_signo = signo;          
     sev.sigev_value.sival_ptr = &timerid;
-    sev.sigev_notify_function = callback;
-    sev.sigev_notify_attributes = NULL;
 
     // Create the timer
     if (timer_create(CLOCK_REALTIME, &sev, &timerid) == -1) {
         perror("timer_create failed");
+        cleanup(sem, shm_data);
+        cleanup(sem, shm_data);
         exit(EXIT_FAILURE);
     }
 
-    // Set the timer to expire after 1 second, and every 1 second thereafter
+    // Set the timer to expire at the given intervals
+    // Set the timer to expire at the given intervals
     its.it_value.tv_sec = tv_sec;
     its.it_value.tv_nsec = tv_nsec;
     its.it_interval.tv_sec = interval_tv_sec;
@@ -182,6 +254,8 @@ void create_timer(timer_callback callback, int tv_sec, int tv_nsec, int interval
 
     if (timer_settime(timerid, 0, &its, NULL) == -1) {
         perror("timer_settime failed");
+        cleanup(sem, shm_data);
+        cleanup(sem, shm_data);
         exit(EXIT_FAILURE);
     }
 }

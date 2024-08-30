@@ -5,59 +5,73 @@
 #include <signal.h>
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <sys/wait.h>
 #include <semaphore.h>
-#include <time.h>       // Include the header for timer functions
+#include <time.h>
 
 #include "headers/utils.h"
 #include "headers/process.h"
+#include "headers/io.h"
 
 shared_data *shm_data;
 sem_t *sem;
+SimulationParameters params;
 
-void send_signal(){
-    pid_t receiver_pid = shm_data->pid_array[0];
+void send_signal() {
+    srand(time(NULL));
 
-    // Send SIGUSR1 to the receiver process
-    if (kill(receiver_pid, SIGUSR1) == -1) {
-        perror("kill");
-        exit(EXIT_FAILURE);
+    pid_t receiver_pid = 0;
+    int random_index = 0;
+
+    int new_atom_random = (rand() % params.n_atom_init) + 1;
+
+    for(int m = 0; m < new_atom_random; m++){
+        random_index = rand() % shm_data->num_processes;
+        receiver_pid = shm_data->pid_array[random_index];
+
+        sem_wait(sem);
+        shm_data->attivazioni++;
+        sem_post(sem);
+
+        if (kill(receiver_pid, SIGUSR1) == -1) {
+            perror("kill");
+            exit(EXIT_FAILURE);
+        }
+
+        usleep(1);
     }
-
-    printf("Sent SIGUSR1 to process %d\n", receiver_pid);
+    sem_post(sem);
 }
 
-// Timer signal handler
+
 void timer_handler(int sig) {
     send_signal();
     // Set the alarm again for the next second
     alarm(2);
 }
 
+void sigterm_handler(int sig) {
+    cleanup(&sem, &shm_data);
+    exit(EXIT_SUCCESS);
+}
+
 int main(int argc, char *argv[]){
-    // Open shared memory
-    int shm_fd = shm_open(SHARED_MEM_NAME, O_RDWR, 0666);
-    if (shm_fd == -1) {
-        perror("shm_open failed");
-        exit(EXIT_FAILURE);
-    }
+    const char* filename = "variabili.txt";
+    params = leggiVariabili(filename);
 
-    // Map shared memory
-    shm_data = mmap(0, sizeof(shared_data), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-    if (shm_data == MAP_FAILED) {
-        perror("mmap failed");
-        exit(EXIT_FAILURE);
-    }
+    connect_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
 
-    // Open semaphore
-    sem = sem_open(SEMAPHORE_NAME, 0);
-    if (sem == SEM_FAILED) {
-        perror("sem_open failed");
+    struct sigaction sig_term;
+    sig_term.sa_handler = sigterm_handler;
+    sigemptyset(&sig_term.sa_mask);
+    sig_term.sa_flags = 0;
+
+    if (sigaction(SIGTERM, &sig_term, NULL) == -1) {
+        perror("sigaction failed");
         exit(EXIT_FAILURE);
     }
 
     struct sigaction sa;
-
-    // Set up the signal handler
     sa.sa_handler = timer_handler;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = 0;
@@ -66,22 +80,13 @@ int main(int argc, char *argv[]){
         perror("sigaction failed");
         exit(EXIT_FAILURE);
     }
-
-    // Set the initial alarm for 1 second
-    if (alarm(2) == -1) {
-        perror("alarm failed");
-        exit(EXIT_FAILURE);
-    }
-    shm_data ->attivazioni++;
+  
+    create_timer(SIGALRM, params.step_attivatore, 0, params.step_attivatore, 0, &sem, &shm_data);
 
     while(1){
         pause();
     }
 
-
-    // Unmap shared memory and close semaphore (unreachable in this example)
-    munmap(shm_data, sizeof(shared_data));
-    sem_close(sem);
-
+    cleanup(&sem, &shm_data);
     exit(EXIT_SUCCESS);
 }

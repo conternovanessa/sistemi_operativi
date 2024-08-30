@@ -6,6 +6,7 @@
 
 #define SHARED_MEM_NAME "/shared_mem"
 #define SEMAPHORE_NAME "/semaphore"
+#define MAX_PROCESSES 10000
 
 // STRUCT DEFINITIONS
 typedef struct
@@ -17,7 +18,8 @@ typedef struct
     int scorie;
     pid_t scorie_pid[100];
     int num_processes;
-    pid_t pid_array[100];
+    pid_t pid_array[MAX_PROCESSES];
+    pid_t master_pid;
 } shared_data;
 
 typedef struct

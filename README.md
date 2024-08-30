@@ -335,10 +335,7 @@ int main(int argc, char *argv[]) {
 
 
 ```
-mkdir build
-cp variabili.txt build
-cd build
-cmake ..
+cmake .
 make
 ```
 
