@@ -104,7 +104,6 @@ void kill_all_processes(pid_t al_pid, pid_t a_pid, shared_data *shm_data) {
 
         const char *filename = "variabili.txt";
         params = leggiVariabili(filename);
-        params = leggiVariabili(filename);
         print_line();
         printf("PARAMETERS OBTAINED FROM THE FILE: \n");
         printSimulationParameters(&params);
