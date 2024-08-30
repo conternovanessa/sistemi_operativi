@@ -11,10 +11,7 @@ sudo apt install gcc g++ cmake -y
 Open a terminal on current folder with terminal and run:
 
 ```
-mkdir build
-cp variabili.txt build
-cd build
-cmake ..
+cmake .
 make
 ```
 
