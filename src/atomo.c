@@ -86,13 +86,12 @@ int main(int argc, char *argv[]){
 
     int minimo = params.min_n_atomico;
     int num_atomico = atoi(argv[1]);
+    
     if (num_atomico <= 0){
         fprintf(stderr, "Invalid value for num_atomico\n");
         exit(EXIT_FAILURE);
     }
 
-    const char *filename = "variabili.txt";
-    SimulationParameters params = leggiVariabili(filename);
 
     connect_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
 
