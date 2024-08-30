@@ -97,24 +97,6 @@ pid_t create_atomo(int *max_n_atomico, sem_t *sem, shared_data *shm_data) {
 
     return c_pid;
 }
-pid_t create_alimentatore() {
-    pid_t al_pid = fork();
-    if (al_pid == -1) {
-        perror("fork for alimentatore did not go well");
-        exit(EXIT_FAILURE);
-    }
-    if (al_pid == 0) {
-        // Child process: alimentatore
-        char *alimentatore_args[] = {"alimentatore", NULL};
-
-        // Verifica se execve fallisce
-        if (execve("./alimentatore", alimentatore_args, NULL) == -1) {
-            perror("execve failed for alimentatore");
-            exit(EXIT_FAILURE);
-        }
-    }
-    return al_pid;
-}
 
 
 void add_pid(pid_t pid, sem_t *sem, shared_data *shm_data) {
