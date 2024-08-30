@@ -154,8 +154,6 @@ void kill_all_processes(pid_t al_pid, pid_t a_pid, shared_data *shm_data) {
         // Wait for simulation duration
         for (int count = 1; count <= params.sim_duration; count++) {
             sleep(1);
-            printf("count %d\n", count);
-            fflush(stdout);
         }
 
         printf("TIMEOUT!\n");
