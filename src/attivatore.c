@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -42,8 +43,11 @@ void send_signal() {
     sem_post(sem);
 }
 
+
 void timer_handler(int sig) {
     send_signal();
+    // Set the alarm again for the next second
+    alarm(2);
 }
 
 void sigterm_handler(int sig) {
@@ -76,7 +80,7 @@ int main(int argc, char *argv[]){
         perror("sigaction failed");
         exit(EXIT_FAILURE);
     }
-
+  
     create_timer(SIGALRM, params.step_attivatore, 0, params.step_attivatore, 0, &sem, &shm_data);
 
     while(1){

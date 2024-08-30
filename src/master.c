@@ -17,6 +17,7 @@
 // Global variables for shared memory and semaphore
 shared_data *shm_data;
 sem_t *sem;
+
 pid_t al_pid;
 pid_t a_pid;
 SimulationParameters params;
@@ -61,6 +62,7 @@ void print_and_consume(int sig) {
         }
     }
 }
+
 
 void kill_all_processes(pid_t al_pid, pid_t a_pid, shared_data *shm_data) {
     // Terminate alimentatore

@@ -81,7 +81,10 @@ int main(int argc, char *argv[]){
         fprintf(stderr, "Usage: %s <num_atomico>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
+    const char* filename = "variabili.txt";
+    SimulationParameters params = leggiVariabili(filename);
 
+    int minimo = params.min_n_atomico;
     int num_atomico = atoi(argv[1]);
     if (num_atomico <= 0){
         fprintf(stderr, "Invalid value for num_atomico\n");
@@ -113,6 +116,7 @@ int main(int argc, char *argv[]){
         exit(EXIT_FAILURE);
     }
 
+
     while (1){
         // Wait for the signal
         if (sigwaitinfo(&set, &info) == -1){
@@ -137,6 +141,7 @@ int main(int argc, char *argv[]){
                     }
                 }
                 sem_post(sem);
+
 
                 kill(pid_rem, SIGTERM);
             }

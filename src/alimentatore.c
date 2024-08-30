@@ -5,6 +5,9 @@
 #include <signal.h>
 #include <sys/mman.h>
 #include <fcntl.h>
+#include <semaphore.h>
+#include <sys/wait.h>
+#include <time.h>
 
 #include "headers/utils.h"
 #include "headers/io.h"
