@@ -14,6 +14,7 @@
 #include "headers/io.h"
 
 shared_data *shm_data;
+int shmid;
 sem_t *sem;
 SimulationParameters params;
 
@@ -46,8 +47,6 @@ void send_signal() {
 
 void timer_handler(int sig) {
     send_signal();
-    // Set the alarm again for the next second
-    alarm(2);
 }
 
 void sigterm_handler(int sig) {
@@ -58,8 +57,8 @@ void sigterm_handler(int sig) {
 int main(int argc, char *argv[]){
     const char* filename = "variabili.txt";
     params = leggiVariabili(filename);
-
-    connect_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
+    int shmid;
+    connect_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, &shmid, &shm_data);
 
     struct sigaction sig_term;
     sig_term.sa_handler = sigterm_handler;
@@ -81,7 +80,7 @@ int main(int argc, char *argv[]){
         exit(EXIT_FAILURE);
     }
   
-    create_timer(SIGALRM, params.step_attivatore, 0, params.step_attivatore, 0, &sem, &shm_data);
+    create_timer(SIGALRM, params.step_attivatore, 0, params.step_attivatore, 0, &sem, &shmid, &shm_data);
 
     while(1){
         pause();

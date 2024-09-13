@@ -8,8 +8,6 @@
 #include <sys/mman.h>
 #include <semaphore.h>
 #include <time.h>
-#include <errno.h>
-
 #include "headers/utils.h"
 #include "headers/io.h"
 #include "headers/process.h"
@@ -17,6 +15,7 @@
 // Global variables for shared memory and semaphore
 shared_data *shm_data;
 sem_t *sem;
+int shmid;
 
 pid_t al_pid;
 pid_t a_pid;
@@ -27,11 +26,14 @@ void print_and_consume(int sig) {
     
     print_shared_data(shm_data);
 
+    if(shm_data->scissioni > 0 && shm_data ->free_energy > 0){
 
-    sem_wait(sem);
-    shm_data -> free_energy -= params.energy_demand;
-    shm_data -> consumata += params.energy_demand;
-    sem_post(sem);
+        sem_wait(sem);
+        shm_data -> free_energy -= params.energy_demand;
+        shm_data -> consumata += params.energy_demand;
+        sem_post(sem);
+
+    }
 
     if (shm_data->scissioni >= 1 && params.energy_demand >= shm_data->free_energy) {
         printf("BLACKOUT!\n");
@@ -45,21 +47,16 @@ void print_and_consume(int sig) {
 }
 
     int safe_terminate_process(pid_t pid) {
+    // Check if the process exists
     if (kill(pid, 0) == 0) {
         // Process exists, try to terminate it
         if (kill(pid, SIGTERM) == 0) {
-            return 0;
+            return 0;  // Successfully sent SIGTERM
         } else {
-            perror("Error sending SIGTERM");
-            return -1;
+            return -1;  // Error sending SIGTERM
         }
     } else {
-        if (errno == ESRCH) {
-            return 0;  // Not an error, process is already gone
-        } else {
-            perror("Error checking process existence");
-            return -1;
-        }
+        return 0;  // Assume the process is already gone
     }
 }
 
@@ -93,7 +90,7 @@ void kill_all_processes(pid_t al_pid, pid_t a_pid, shared_data *shm_data) {
 
     void sigterm_handler(int signum) {
         kill_all_processes(al_pid, a_pid, shm_data);
-        cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
+        cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, shmid, &shm_data);
         exit(EXIT_SUCCESS);
     }
 
@@ -101,6 +98,7 @@ void kill_all_processes(pid_t al_pid, pid_t a_pid, shared_data *shm_data) {
 
         pid_t master_pid = getpid();
 
+        
         const char *filename = "variabili.txt";
         params = leggiVariabili(filename);
         print_line();
@@ -108,7 +106,7 @@ void kill_all_processes(pid_t al_pid, pid_t a_pid, shared_data *shm_data) {
         printSimulationParameters(&params);
 
         // Initialize shared memory and semaphore
-        init_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
+        init_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, &shmid, &shm_data);
         shm_data -> master_pid = master_pid;
         srand(time(NULL));
 
@@ -119,13 +117,13 @@ void kill_all_processes(pid_t al_pid, pid_t a_pid, shared_data *shm_data) {
         pid_t al_pid = create_alimentatore(shm_data);
         if (al_pid == -1) {
             perror("Failed to create alimentatore");
-            cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
+            cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, shmid, &shm_data);
             exit(EXIT_FAILURE);
         }
         pid_t a_pid = create_attivatore(shm_data);
         if (a_pid == -1) {
             perror("Failed to create alimentatore");
-            cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
+            cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, shmid, &shm_data);
             exit(EXIT_FAILURE);
         }
 
@@ -136,7 +134,7 @@ void kill_all_processes(pid_t al_pid, pid_t a_pid, shared_data *shm_data) {
         sa_term.sa_flags = 0;
         if (sigaction(SIGTERM, &sa_term, NULL) == -1) {
             perror("sigaction failed");
-            cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
+            cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, shmid, &shm_data);
             exit(EXIT_FAILURE);
         }
 
@@ -147,10 +145,10 @@ void kill_all_processes(pid_t al_pid, pid_t a_pid, shared_data *shm_data) {
         sa.sa_flags = 0;
         if (sigaction(SIGALRM, &sa, NULL) == -1) {
             perror("sigaction failed");
-            cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
+            cleanup_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, shmid, &shm_data);
             exit(EXIT_FAILURE);
         }
-        create_timer(SIGALRM, 1, 0, 1, 0, &sem, &shm_data);
+        create_timer(SIGALRM, 1, 0, 1, 0, &sem, &shmid, &shm_data);
         // Wait for simulation duration
         for (int count = 1; count <= params.sim_duration; count++) {
             sleep(1);

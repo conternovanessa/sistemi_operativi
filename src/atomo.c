@@ -13,6 +13,7 @@
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
+int shmid;
 shared_data *shm_data;
 sem_t *sem;
 
@@ -93,7 +94,7 @@ int main(int argc, char *argv[]){
     }
 
 
-    connect_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
+    connect_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, &shmid, &shm_data);
 
     struct sigaction sa_term;
     sa_term.sa_handler = sigterm_handler;

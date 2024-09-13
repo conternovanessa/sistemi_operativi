@@ -14,6 +14,7 @@
 #include "headers/process.h"
 
 shared_data *shm_data;
+int shmid;
 sem_t *sem;
 SimulationParameters params;
 
@@ -35,7 +36,7 @@ int main() {
     const char* filename = "variabili.txt";
     params = leggiVariabili(filename);
 
-    connect_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, SHARED_MEM_NAME, &shm_data);
+    connect_shared_memory_and_semaphore(SEMAPHORE_NAME, &sem, &shmid, &shm_data);
 
     // Set up the signal handler for SIGTERM
     struct sigaction sa_term;
@@ -62,14 +63,13 @@ int main() {
     }
 
     // Use the create_timer function to create a timer that sends SIGUSR1
-    create_timer(SIGUSR1, 0, params.step_alimentazione, 0, params.step_alimentazione, &sem, &shm_data);
+    create_timer(SIGUSR1, 0, params.step_alimentazione, 0, params.step_alimentazione, &sem, &shmid, &shm_data);
 
     //waiting for signals
     while (1) {
         pause();  
     }
 
-    // cleanup is added as a safety measure
     cleanup(&sem, &shm_data);
     exit(EXIT_SUCCESS);
 }

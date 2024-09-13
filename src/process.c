@@ -7,9 +7,13 @@
 #include <string.h>
 #include <signal.h>
 #include <time.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
 
 #include "headers/process.h"
 #include "headers/utils.h"
+
+#define SHM_KEY 1234  
 
 pid_t create_alimentatore(shared_data *shm_data) {
     pid_t al_pid = fork();
@@ -60,7 +64,6 @@ pid_t create_atomo(int *max_n_atomico, sem_t *sem, shared_data *shm_data) {
     // Fork atomo process
     pid_t c_pid = fork();
     if (c_pid == -1) {
-        // perror("fork failed di create atomo");
         printf("MELTDOWN!\n");
         kill(shm_data->master_pid, SIGTERM);
         exit(EXIT_FAILURE);
@@ -115,28 +118,68 @@ void add_pid(pid_t pid, sem_t *sem, shared_data *shm_data) {
     }
 }
 
-void init_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const char* shared_name, shared_data** shm_data) {
-    // Open shared memory
-    int shm_fd = shm_open(shared_name, O_CREAT | O_RDWR, 0666);
-    if (shm_fd == -1) {
-        perror("shm_open failed");
+
+void connect_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, int* shmid, shared_data** shm_data) {
+    // Obtain ID of shared memory
+    *shmid = shmget(SHM_KEY, sizeof(shared_data), 0666);
+    if (*shmid == -1) {
+        perror("shmget failed in connect_shared_memory_and_semaphore");
         exit(EXIT_FAILURE);
     }
 
-    // Set size of shared memory
-    if (ftruncate(shm_fd, sizeof(shared_data)) == -1) {
-        perror("ftruncate failed");
+    // Connect shared memory
+    *shm_data = attach_shared_memory(*shmid);
+
+    // Open semaphore
+    *sem = sem_open(sem_name, 0);
+    if (*sem == SEM_FAILED) {
+        perror("sem_open failed in connect_shared_memory_and_semaphore");
+        detach_shared_memory(*shm_data);
         exit(EXIT_FAILURE);
     }
+}
 
-    // Map shared memory
-    *shm_data = mmap(0, sizeof(shared_data), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-    if (*shm_data == MAP_FAILED) {
-        perror("mmap failed");
+
+int create_shared_memory() {
+    int shmid = shmget(SHM_KEY, sizeof(shared_data), IPC_CREAT | 0666);
+    if (shmid == -1) {
+        perror("shmget failed");
         exit(EXIT_FAILURE);
     }
+    return shmid;
+}
 
-    // Initialize shared memory content
+shared_data* attach_shared_memory(int shmid) {
+    void* shm_ptr = shmat(shmid, NULL, 0);
+    if (shm_ptr == (void*)-1) {
+        perror("shmat failed");
+        exit(EXIT_FAILURE);
+    }
+    return (shared_data*)shm_ptr;
+}
+
+void detach_shared_memory(shared_data* shm_data) {
+    if (shmdt(shm_data) == -1) {
+        perror("shmdt failed");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void remove_shared_memory(int shmid) {
+    if (shmctl(shmid, IPC_RMID, NULL) == -1) {
+        perror("shmctl failed");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void init_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, int* shmid, shared_data** shm_data) {
+    // create shared memory
+    *shmid = create_shared_memory();
+
+    // Connect to shared memory
+    *shm_data = attach_shared_memory(*shmid);
+
+    // Initializes the shared memory content
     memset(*shm_data, 0, sizeof(shared_data));
 
     // Create semaphore
@@ -147,58 +190,28 @@ void init_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const c
     }
 }
 
-void connect_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const char* shared_name, shared_data** shm_data) {
-    int shm_fd = shm_open(shared_name, O_RDWR, 0666);
-    if (shm_fd == -1) {
-        perror("shm_open failed");
-        exit(EXIT_FAILURE);
-    }
+void cleanup_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, int shmid, shared_data** shm_data) {
+    // detach shared memory
+    detach_shared_memory(*shm_data);
 
-    *shm_data = mmap(0, sizeof(shared_data), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-    if (*shm_data == MAP_FAILED) {
-        perror("mmap failed");
-        close(shm_fd);  // Clean up the file descriptor before exiting
-        exit(EXIT_FAILURE);
-    }
-
-    close(shm_fd);  // Now safe to close the file descriptor
-
-    *sem = sem_open(sem_name, 0);
-    if (*sem == SEM_FAILED) {
-        perror("sem_open failed");
-        munmap(*shm_data, sizeof(shared_data));  // Unmap shared memory before exiting
-        exit(EXIT_FAILURE);
-    }
-}
-
-
-
-void cleanup_shared_memory_and_semaphore(const char* sem_name, sem_t** sem, const char* shared_name, shared_data** shm_data) {
-    // Unmap shared memory
-    if (munmap(*shm_data, sizeof(shared_data)) == -1) {
-        perror("munmap failed");
-    }
-
-    // Close shared memory
-    if (shm_unlink(shared_name) == -1) {
-        perror("shm_unlink failed");
-    }
+    //remove shared memory
+    remove_shared_memory(shmid);
 
     // Close semaphore
     if (sem_close(*sem) == -1) {
         perror("sem_close failed");
     }
 
-    // Unlink semaphore
+    // Remove semaphore
     if (sem_unlink(sem_name) == -1) {
         perror("sem_unlink failed");
     }
 }
 
 void cleanup(sem_t** sem, shared_data** shm_data) {
-    // Unmap shared memory
-    if (*shm_data != MAP_FAILED) {
-        munmap(*shm_data, sizeof(shared_data));
+    //detach shared memory
+    if (*shm_data != NULL) {
+        detach_shared_memory(*shm_data);
     }
 
     // Close semaphore
@@ -207,14 +220,13 @@ void cleanup(sem_t** sem, shared_data** shm_data) {
     }
 }
 
-void create_timer(int signo, int tv_sec, int tv_nsec, int interval_tv_sec, int interval_tv_nsec, sem_t** sem, shared_data** shm_data) {
+void create_timer(int signo, int tv_sec, int tv_nsec, int interval_tv_sec, int interval_tv_nsec, sem_t** sem, int* shmid, shared_data** shm_data) {
     struct sigevent sev;
     struct itimerspec its;
     timer_t timerid;
 
     // Set up the signal event
-    sev.sigev_notify = SIGEV_SIGNAL;
-    sev.sigev_signo = signo;          
+         
     sev.sigev_notify = SIGEV_SIGNAL;
     sev.sigev_signo = signo;          
     sev.sigev_value.sival_ptr = &timerid;
@@ -223,11 +235,10 @@ void create_timer(int signo, int tv_sec, int tv_nsec, int interval_tv_sec, int i
     if (timer_create(CLOCK_REALTIME, &sev, &timerid) == -1) {
         perror("timer_create failed");
         cleanup(sem, shm_data);
-        cleanup(sem, shm_data);
         exit(EXIT_FAILURE);
     }
 
-    // Set the timer to expire at the given intervals
+
     // Set the timer to expire at the given intervals
     its.it_value.tv_sec = tv_sec;
     its.it_value.tv_nsec = tv_nsec;
@@ -236,7 +247,6 @@ void create_timer(int signo, int tv_sec, int tv_nsec, int interval_tv_sec, int i
 
     if (timer_settime(timerid, 0, &its, NULL) == -1) {
         perror("timer_settime failed");
-        cleanup(sem, shm_data);
         cleanup(sem, shm_data);
         exit(EXIT_FAILURE);
     }
